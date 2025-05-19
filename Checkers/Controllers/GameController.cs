@@ -4,6 +4,7 @@ using Checkers.Services;
 using System;
 using System.Windows.Forms;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Checkers.Controllers
 {
@@ -44,12 +45,24 @@ namespace Checkers.Controllers
 
             if (_game.CurrentPlayer == PlayerType.Black && !_game.IsGameOver)
             {
-                var move = _ai.GetBestMove(_game);
-                if (move != null)
+                var timer = new Timer { Interval = 500 };
+                timer.Tick += (s, e) =>
                 {
-                    _game.MakeMove(move);
-                    _view.UpdateGameState();
-                }
+                    timer.Stop();
+                    var move = _ai.GetBestMove(_game);
+                    if (move != null)
+                    {
+                        _game.MakeMove(move);
+                        _view.UpdateGameState();
+
+                        if (_game.CurrentPlayer == PlayerType.Black &&
+                            _game.ValidMoves.Any(m => m.CapturedPiece != null))
+                        {
+                            HandleClick(0, 0);
+                        }
+                    }
+                };
+                timer.Start();
             }
 
             if (_game.IsGameOver)
