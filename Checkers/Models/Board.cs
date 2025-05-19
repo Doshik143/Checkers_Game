@@ -43,6 +43,46 @@ namespace Checkers.Models
 
         public void RemovePiece(int row, int col) => _pieces[row, col] = null;
 
+        public List<Move> GetValidMoves(Piece piece)
+        {
+            var moves = new List<Move>();
+            if (piece == null) return moves;
+
+            int[] rowDirs = piece.Type == PieceType.Regular
+                ? (piece.Player == PlayerType.White ? new[] { -1 } : new[] { 1 })
+                : new[] { -1, 1 };
+
+            foreach (int rowDir in rowDirs)
+            {
+                foreach (int colDir in new[] { -1, 1 })
+                {
+                    int toRow = piece.Row + rowDir;
+                    int toCol = piece.Col + colDir;
+
+                    if (toRow < 0 || toRow >= Size || toCol < 0 || toCol >= Size) continue;
+
+                    Piece target = GetPiece(toRow, toCol);
+
+                    if (target == null)
+                    {
+                        moves.Add(new Move(piece, toRow, toCol));
+                    }
+                    else if (target.Player != piece.Player)
+                    {
+                        int jumpRow = toRow + rowDir;
+                        int jumpCol = toCol + colDir;
+
+                        if (jumpRow >= 0 && jumpRow < Size && jumpCol >= 0 && jumpCol < Size &&
+                            GetPiece(jumpRow, jumpCol) == null)
+                        {
+                            moves.Add(new Move(piece, jumpRow, jumpCol, target));
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
         public Board Clone()
         {
             var newBoard = new Board();
