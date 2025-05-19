@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Checkers.Models
 {
@@ -48,26 +49,41 @@ namespace Checkers.Models
             var moves = new List<Move>();
             if (piece == null) return moves;
 
-            int[] rowDirs = piece.Type == PieceType.Regular
-                ? (piece.Player == PlayerType.White ? new[] { -1 } : new[] { 1 })
-                : new[] { -1, 1 };
+            int[] rowDirections;
+            if (piece.Type == PieceType.Regular)
+            {
+                rowDirections = piece.Player == PlayerType.White
+                    ? new[] { -1, 1 }
+                    : new[] { 1, -1 };
+            }
+            else
+            {
+                rowDirections = new[] { -1, 1 };
+            }
 
-            foreach (int rowDir in rowDirs)
+            foreach (int rowDir in rowDirections)
             {
                 foreach (int colDir in new[] { -1, 1 })
                 {
                     int toRow = piece.Row + rowDir;
                     int toCol = piece.Col + colDir;
 
-                    if (toRow < 0 || toRow >= Size || toCol < 0 || toCol >= Size) continue;
+                    if (toRow < 0 || toRow >= Size || toCol < 0 || toCol >= Size)
+                        continue;
 
-                    Piece target = GetPiece(toRow, toCol);
+                    Piece targetPiece = GetPiece(toRow, toCol);
 
-                    if (target == null)
+                    if (targetPiece == null)
                     {
+                        if (piece.Type == PieceType.Regular &&
+                            ((piece.Player == PlayerType.White && rowDir == 1) ||
+                             (piece.Player == PlayerType.Black && rowDir == -1)))
+                        {
+                            continue;
+                        }
                         moves.Add(new Move(piece, toRow, toCol));
                     }
-                    else if (target.Player != piece.Player)
+                    else if (targetPiece.Player != piece.Player)
                     {
                         int jumpRow = toRow + rowDir;
                         int jumpCol = toCol + colDir;
@@ -75,12 +91,14 @@ namespace Checkers.Models
                         if (jumpRow >= 0 && jumpRow < Size && jumpCol >= 0 && jumpCol < Size &&
                             GetPiece(jumpRow, jumpCol) == null)
                         {
-                            moves.Add(new Move(piece, jumpRow, jumpCol, target));
+                            moves.Add(new Move(piece, jumpRow, jumpCol, targetPiece));
                         }
                     }
                 }
             }
-            return moves;
+
+            var captureMoves = moves.Where(m => m.CapturedPiece != null).ToList();
+            return captureMoves.Any() ? captureMoves : moves;
         }
 
         public Board Clone()
