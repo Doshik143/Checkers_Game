@@ -62,11 +62,20 @@ namespace Checkers.Views
                 new ToolStripMenuItem("Зберегти", null, (s, e) => _controller.SaveGame()),
                 new ToolStripMenuItem("Завантажити", null, (s, e) => _controller.LoadGame()),
                 new ToolStripSeparator(),
+                new ToolStripMenuItem("Статистика", null, (s, e) => ShowStatistics()),
+                new ToolStripSeparator(),
                 new ToolStripMenuItem("Вихід", null, (s, e) => Close())
             });
 
             menu.Items.Add(gameMenu);
             Controls.Add(menu);
+        }
+
+        private void ShowStatistics()
+        {
+            var stats = _controller.GetStatistics();
+            MessageBox.Show(stats.ToString(), "Статистика ігор",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         protected override void OnPaint(PaintEventArgs e)

@@ -16,6 +16,7 @@ namespace Checkers.Models
 
         public Game()
         {
+            StartTime = DateTime.Now;
             InitializeGame();
         }
 
