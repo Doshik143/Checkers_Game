@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\Board.cs" />
+    <Compile Include="Models\Game.cs" />
     <Compile Include="Models\GameState.cs" />
     <Compile Include="Models\Move.cs" />
     <Compile Include="Models\Piece.cs" />
