@@ -56,10 +56,30 @@ namespace Checkers.Services
             }
         }
 
-        private void ExploreMoveSequences(Board board, Move move, List<Move> currentSequence, List<List<Move>> allSequences)
+        private void ExploreMoveSequences(Board board, Move move, List<Move> currentSequence,
+                                List<List<Move>> allSequences, int depth = 0)
         {
+            const int maxDepth = 10;
+            if (depth > maxDepth) return;
+
+            if (board == null || move == null || currentSequence == null || allSequences == null)
+                return;
+
+            var newSequence = new List<Move>(currentSequence.Where(m =>
+                m != null &&
+                m.Piece != null &&
+                m.CapturedPiece != null));
+
+            newSequence.Add(move);
+
+            if (board.GetPiece(move.Piece.Row, move.Piece.Col) == null)
+                return;
+
             var newBoard = board.Clone();
             var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+
+            if (piece == null) return;
+
             newBoard.MovePiece(piece, move.ToRow, move.ToCol);
 
             if (move.CapturedPiece != null)
@@ -68,20 +88,22 @@ namespace Checkers.Services
             }
 
             var nextMoves = newBoard.GetValidMoves(newBoard.GetPiece(move.ToRow, move.ToCol))
-                .Where(m => m.CapturedPiece != null)
+                .Where(m => m?.CapturedPiece != null)
                 .ToList();
 
             if (nextMoves.Any())
             {
                 foreach (var nextMove in nextMoves)
                 {
-                    var newSequence = new List<Move>(currentSequence) { nextMove };
-                    ExploreMoveSequences(newBoard, nextMove, newSequence, allSequences);
+                    if (nextMove != null)
+                    {
+                        ExploreMoveSequences(newBoard, nextMove, newSequence, allSequences, depth + 1);
+                    }
                 }
             }
             else
             {
-                allSequences.Add(currentSequence);
+                allSequences.Add(newSequence);
             }
         }
 
