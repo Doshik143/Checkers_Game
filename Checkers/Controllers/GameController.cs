@@ -5,6 +5,7 @@ using System;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Linq;
+using CheckersGame.Services;
 
 namespace Checkers.Controllers
 {
@@ -16,6 +17,7 @@ namespace Checkers.Controllers
         private readonly AIService _ai;
         private readonly GameStatistics _stats;
         private Stopwatch _gameTimer;
+        private readonly GameSaver _gameSaver = new GameSaver();
         public GameStatistics GetStatistics() => _stats;
 
         public GameController(MainForm view)
@@ -81,20 +83,43 @@ namespace Checkers.Controllers
 
         public void SaveGame()
         {
-            var dialog = new SaveFileDialog { Filter = "Файли шашок (*.chk)|*.chk" };
-            if (dialog.ShowDialog() == DialogResult.OK)
+            var saveDialog = new SaveFileDialog
             {
-                _saver.Save(_game, dialog.FileName);
+                Filter = "JSON файли (*.json)|*.json",
+                Title = "Зберегти гру",
+                DefaultExt = "json",
+                AddExtension = true
+            };
+
+            if (saveDialog.ShowDialog() == DialogResult.OK)
+            {
+                if (_gameSaver.Save(_game, saveDialog.FileName))
+                {
+                    MessageBox.Show("Гра успішно збережена!", "Успіх",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
 
         public void LoadGame()
         {
-            var dialog = new OpenFileDialog { Filter = "Файли шашок (*.chk)|*.chk" };
-            if (dialog.ShowDialog() == DialogResult.OK)
+            var openDialog = new OpenFileDialog
             {
-                _game = _saver.Load(dialog.FileName) ?? new Game();
-                _view.UpdateGameState();
+                Filter = "JSON файли (*.json)|*.json",
+                Title = "Завантажити гру",
+                CheckFileExists = true
+            };
+
+            if (openDialog.ShowDialog() == DialogResult.OK)
+            {
+                var loadedGame = _gameSaver.Load(openDialog.FileName);
+                if (loadedGame != null)
+                {
+                    _game = loadedGame;
+                    _view.UpdateGameState();
+                    MessageBox.Show("Гра успішно завантажена!", "Успіх",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
 

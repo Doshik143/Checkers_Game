@@ -1,11 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Checkers.Models
 {
+    [JsonObject]
     public class Board
     {
         public const int Size = 8;
+
+        [JsonProperty]
         private readonly Piece[,] _pieces = new Piece[Size, Size];
 
         public Board() => InitializeBoard();

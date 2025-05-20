@@ -1,10 +1,20 @@
-﻿namespace Checkers.Models
+﻿using Newtonsoft.Json;
+
+namespace Checkers.Models
 {
+    [JsonObject]
     public class Piece
     {
+        [JsonProperty]
         public PieceType Type { get; set; }
+
+        [JsonProperty]
         public PlayerType Player { get; }
+
+        [JsonProperty]
         public int Row { get; set; }
+
+        [JsonProperty]
         public int Col { get; set; }
 
         public Piece(PlayerType player, int row, int col)
