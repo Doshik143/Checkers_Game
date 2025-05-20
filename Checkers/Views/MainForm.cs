@@ -17,20 +17,22 @@ namespace Checkers.Views
         private readonly Brush[] _pieceBrushes;
         private readonly Brush[] _crownBrushes;
 
+        private PlayerType _humanPlayerColor = PlayerType.White;
+
         public MainForm()
         {
             _pieceBrushes = new Brush[]
             {
-            Brushes.White,
-            Brushes.Black,
-            Brushes.White,
-            Brushes.Black
+                Brushes.White,
+                Brushes.Black,
+                Brushes.White,
+                Brushes.Black
             };
 
             _crownBrushes = new Brush[]
             {
-            Brushes.Gold,
-            Brushes.Goldenrod
+                Brushes.Gold,
+                Brushes.Goldenrod
             };
 
             _controller = new GameController(this);
@@ -93,8 +95,11 @@ namespace Checkers.Views
             {
                 for (int col = 0; col < Board.Size; col++)
                 {
+                    int visualRow = TransformRow(row);
+                    int visualCol = TransformCol(col);
+
                     Brush brush = (row + col) % 2 == 0 ? Brushes.White : Brushes.SaddleBrown;
-                    g.FillRectangle(brush, col * CellSize, row * CellSize, CellSize, CellSize);
+                    g.FillRectangle(brush, visualCol * CellSize, visualRow * CellSize, CellSize, CellSize);
                 }
             }
         }
@@ -112,14 +117,17 @@ namespace Checkers.Views
                         int brushIndex = (piece.Player == PlayerType.White ? 0 : 1) +
                                         (piece.Type == PieceType.King ? 2 : 0);
 
-                        int x = col * CellSize + PieceOffset;
-                        int y = row * CellSize + PieceOffset;
+                        int visualRow = TransformRow(row);
+                        int visualCol = TransformCol(col);
 
-                        //Drawing a checker
+                        int x = visualCol * CellSize + PieceOffset;
+                        int y = visualRow * CellSize + PieceOffset;
+
+                        // Drawing a checker
                         g.FillEllipse(_pieceBrushes[brushIndex], x, y, PieceSize, PieceSize);
                         g.DrawEllipse(Pens.Black, x, y, PieceSize, PieceSize);
 
-                        //Drawing a crown
+                        // Drawing a crown
                         if (piece.Type == PieceType.King)
                         {
                             int crownX = x + (PieceSize - CrownSize) / 2;
@@ -128,7 +136,7 @@ namespace Checkers.Views
 
                             Point[] crownPoints = new Point[]
                             {
-                                new Point(crownX + CrownSize/2, crownY),
+                                new Point(crownX + CrownSize / 2, crownY),
                                 new Point(crownX + CrownSize, crownY + CrownSize),
                                 new Point(crownX, crownY + CrownSize)
                             };
@@ -137,7 +145,7 @@ namespace Checkers.Views
                             g.DrawPolygon(Pens.Black, crownPoints);
                         }
 
-                        //Highlighting the selected checker
+                        // Highlighting the selected checker
                         if (piece == game.SelectedPiece)
                         {
                             g.DrawEllipse(new Pen(Color.Yellow, 3), x - 2, y - 2, PieceSize + 4, PieceSize + 4);
@@ -152,8 +160,11 @@ namespace Checkers.Views
             var game = _controller.GetGame();
             foreach (var move in game.ValidMoves)
             {
-                int centerX = move.ToCol * CellSize + CellSize / 2;
-                int centerY = move.ToRow * CellSize + CellSize / 2;
+                int visualRow = TransformRow(move.ToRow);
+                int visualCol = TransformCol(move.ToCol);
+
+                int centerX = visualCol * CellSize + CellSize / 2;
+                int centerY = visualRow * CellSize + CellSize / 2;
                 int markerSize = 10;
 
                 Brush brush = move.CapturedPiece != null ? Brushes.Red : Brushes.LimeGreen;
@@ -188,12 +199,16 @@ namespace Checkers.Views
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
-            int row = e.Y / CellSize;
-            int col = e.X / CellSize;
 
-            if (row >= 0 && row < Board.Size && col >= 0 && col < Board.Size)
+            int visualRow = e.Y / CellSize;
+            int visualCol = e.X / CellSize;
+
+            int logicRow = _humanPlayerColor == PlayerType.White ? visualRow : Board.Size - 1 - visualRow;
+            int logicCol = _humanPlayerColor == PlayerType.White ? visualCol : Board.Size - 1 - visualCol;
+
+            if (logicRow >= 0 && logicRow < Board.Size && logicCol >= 0 && logicCol < Board.Size)
             {
-                _controller.HandleClick(row, col);
+                _controller.HandleClick(logicRow, logicCol);
                 Invalidate();
             }
         }
@@ -211,6 +226,21 @@ namespace Checkers.Views
                 MessageBoxIcon.Information);
         }
 
+        public void SetHumanPlayerColor(PlayerType color)
+        {
+            _humanPlayerColor = color;
+        }
+
+        private int TransformRow(int row)
+        {
+            return _humanPlayerColor == PlayerType.White ? row : Board.Size - 1 - row;
+        }
+
+        private int TransformCol(int col)
+        {
+            return _humanPlayerColor == PlayerType.White ? col : Board.Size - 1 - col;
+        }
+
         private void InitializeComponent()
         {
             this.SuspendLayout();
@@ -221,7 +251,6 @@ namespace Checkers.Views
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "MainForm";
             this.ResumeLayout(false);
-
         }
     }
 }

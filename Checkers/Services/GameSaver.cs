@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using System.Xml;
 using Formatting = Newtonsoft.Json.Formatting;
 
-namespace CheckersGame.Services
+namespace Checkers.Services
 {
     public class GameSaver
     {
