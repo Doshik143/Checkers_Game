@@ -205,7 +205,7 @@ namespace Checkers.Views
 
         public void ShowGameOver(PlayerType winner)
         {
-            MessageBox.Show($"Гра завершена! Перемігли {(winner == PlayerType.White ? "білі" : "чорні")} шашки!",
+            MessageBox.Show($"Гра завершена! Перемогли {(winner == PlayerType.White ? "білі" : "чорні")} шашки!",
                 "Гра закінчена",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);

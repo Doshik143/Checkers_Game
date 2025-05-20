@@ -49,7 +49,7 @@ namespace Checkers.Models
             if (piece == null || _pieces == null)
                 return new List<Move>();
 
-            var moves = new List<Move>();
+            var allMoves = new List<Move>();
 
             if (piece.Type == PieceType.Regular)
             {
@@ -57,6 +57,62 @@ namespace Checkers.Models
                     ? new[] { -1, 1 }
                     : new[] { 1, -1 };
 
+                foreach (int rowDir in rowDirections)
+                {
+                    foreach (int colDir in new[] { -1, 1 })
+                    {
+                        CheckSimpleMoveOrCapture(piece, rowDir, colDir, allMoves);
+                    }
+                }
+            }
+            else
+            {
+                foreach (int rowDir in new[] { -1, 1 })
+                {
+                    foreach (int colDir in new[] { -1, 1 })
+                    {
+                        CheckKingMovesInDirection(piece, rowDir, colDir, allMoves);
+                    }
+                }
+            }
+
+            bool hasAnyCaptures = HasAnyCaptures(piece.Player);
+
+            if (hasAnyCaptures)
+            {
+                return allMoves.Where(m => m.CapturedPiece != null).ToList();
+            }
+
+            return allMoves;
+        }
+
+        private bool HasAnyCaptures(PlayerType player)
+        {
+            for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                {
+                    var piece = GetPiece(row, col);
+                    if (piece != null && piece.Player == player)
+                    {
+                        var moves = GetRawMovesForPiece(piece);
+                        if (moves.Any(m => m.CapturedPiece != null))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private List<Move> GetRawMovesForPiece(Piece piece)
+        {
+            var moves = new List<Move>();
+
+            if (piece.Type == PieceType.Regular)
+            {
+                int[] rowDirections = { -1, 1 };
                 foreach (int rowDir in rowDirections)
                 {
                     foreach (int colDir in new[] { -1, 1 })
@@ -76,13 +132,7 @@ namespace Checkers.Models
                 }
             }
 
-            var captureMoves = moves
-                .Where(m => m != null && m.CapturedPiece != null &&
-                       m.CapturedPiece.Row >= 0 && m.CapturedPiece.Col >= 0 &&
-                       m.CapturedPiece.Row < Size && m.CapturedPiece.Col < Size)
-                .ToList();
-
-            return captureMoves.Any() ? captureMoves : moves;
+            return moves;
         }
 
         private void CheckSimpleMoveOrCapture(Piece piece, int rowDir, int colDir, List<Move> moves)
