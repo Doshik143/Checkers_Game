@@ -42,6 +42,7 @@ namespace Checkers.Controllers
 
             _game.SelectPiece(row, col);
             _view.UpdateGameState();
+            FinalizeGameIfOver();
 
             if (_game.CurrentPlayer == PlayerType.Black && !_game.IsGameOver)
             {
@@ -54,6 +55,7 @@ namespace Checkers.Controllers
                     {
                         _game.MakeMove(move);
                         _view.UpdateGameState();
+                        FinalizeGameIfOver();
 
                         if (_game.CurrentPlayer == PlayerType.Black &&
                             _game.ValidMoves.Any(m => m.CapturedPiece != null))
@@ -64,7 +66,10 @@ namespace Checkers.Controllers
                 };
                 timer.Start();
             }
+        }
 
+        private void FinalizeGameIfOver()
+        {
             if (_game.IsGameOver)
             {
                 _gameTimer.Stop();
