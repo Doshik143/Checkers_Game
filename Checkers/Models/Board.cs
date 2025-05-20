@@ -1,10 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Checkers.Models
 {
+    [JsonObject]
     public class Board
     {
         public const int Size = 8;
+
+        [JsonProperty]
         private readonly Piece[,] _pieces = new Piece[Size, Size];
 
         public Board() => InitializeBoard();
@@ -45,42 +50,188 @@ namespace Checkers.Models
 
         public List<Move> GetValidMoves(Piece piece)
         {
-            var moves = new List<Move>();
-            if (piece == null) return moves;
+            if (piece == null || _pieces == null)
+                return new List<Move>();
 
-            int[] rowDirs = piece.Type == PieceType.Regular
-                ? (piece.Player == PlayerType.White ? new[] { -1 } : new[] { 1 })
-                : new[] { -1, 1 };
+            var allMoves = new List<Move>();
 
-            foreach (int rowDir in rowDirs)
+            if (piece.Type == PieceType.Regular)
             {
-                foreach (int colDir in new[] { -1, 1 })
+                int[] rowDirections = piece.Player == PlayerType.White
+                    ? new[] { -1, 1 }
+                    : new[] { 1, -1 };
+
+                foreach (int rowDir in rowDirections)
                 {
-                    int toRow = piece.Row + rowDir;
-                    int toCol = piece.Col + colDir;
-
-                    if (toRow < 0 || toRow >= Size || toCol < 0 || toCol >= Size) continue;
-
-                    Piece target = GetPiece(toRow, toCol);
-
-                    if (target == null)
+                    foreach (int colDir in new[] { -1, 1 })
                     {
-                        moves.Add(new Move(piece, toRow, toCol));
+                        CheckSimpleMoveOrCapture(piece, rowDir, colDir, allMoves);
                     }
-                    else if (target.Player != piece.Player)
+                }
+            }
+            else
+            {
+                foreach (int rowDir in new[] { -1, 1 })
+                {
+                    foreach (int colDir in new[] { -1, 1 })
                     {
-                        int jumpRow = toRow + rowDir;
-                        int jumpCol = toCol + colDir;
+                        CheckKingMovesInDirection(piece, rowDir, colDir, allMoves);
+                    }
+                }
+            }
 
-                        if (jumpRow >= 0 && jumpRow < Size && jumpCol >= 0 && jumpCol < Size &&
-                            GetPiece(jumpRow, jumpCol) == null)
+            bool hasAnyCaptures = HasAnyCaptures(piece.Player);
+
+            if (hasAnyCaptures)
+            {
+                return allMoves.Where(m => m.CapturedPiece != null).ToList();
+            }
+
+            return allMoves;
+        }
+
+        private bool HasAnyCaptures(PlayerType player)
+        {
+            for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                {
+                    var piece = GetPiece(row, col);
+                    if (piece != null && piece.Player == player)
+                    {
+                        var moves = GetRawMovesForPiece(piece);
+                        if (moves.Any(m => m.CapturedPiece != null))
                         {
-                            moves.Add(new Move(piece, jumpRow, jumpCol, target));
+                            return true;
                         }
                     }
                 }
             }
+            return false;
+        }
+
+        private List<Move> GetRawMovesForPiece(Piece piece)
+        {
+            var moves = new List<Move>();
+
+            if (piece.Type == PieceType.Regular)
+            {
+                int[] rowDirections = { -1, 1 };
+                foreach (int rowDir in rowDirections)
+                {
+                    foreach (int colDir in new[] { -1, 1 })
+                    {
+                        CheckSimpleMoveOrCapture(piece, rowDir, colDir, moves);
+                    }
+                }
+            }
+            else
+            {
+                foreach (int rowDir in new[] { -1, 1 })
+                {
+                    foreach (int colDir in new[] { -1, 1 })
+                    {
+                        CheckKingMovesInDirection(piece, rowDir, colDir, moves);
+                    }
+                }
+            }
+
             return moves;
+        }
+
+        private void CheckSimpleMoveOrCapture(Piece piece, int rowDir, int colDir, List<Move> moves)
+        {
+            int toRow = piece.Row + rowDir;
+            int toCol = piece.Col + colDir;
+
+            if (toRow < 0 || toRow >= Size || toCol < 0 || toCol >= Size)
+                return;
+
+            Piece targetPiece = GetPiece(toRow, toCol);
+
+            if (targetPiece == null)
+            {
+                if ((piece.Player == PlayerType.White && rowDir == -1) ||
+                    (piece.Player == PlayerType.Black && rowDir == 1))
+                {
+                    moves.Add(new Move(piece, toRow, toCol));
+                }
+            }
+            else if (targetPiece.Player != piece.Player)
+            {
+                int jumpRow = toRow + rowDir;
+                int jumpCol = toCol + colDir;
+
+                if (jumpRow >= 0 && jumpRow < Size && jumpCol >= 0 && jumpCol < Size &&
+                    GetPiece(jumpRow, jumpCol) == null)
+                {
+                    moves.Add(new Move(piece, jumpRow, jumpCol, targetPiece));
+                }
+            }
+        }
+
+        private void CheckKingMovesInDirection(Piece king, int rowDir, int colDir, List<Move> moves)
+        {
+            int currentRow = king.Row + rowDir;
+            int currentCol = king.Col + colDir;
+            Piece firstEnemy = null;
+            int enemyRow = -1, enemyCol = -1;
+            bool hasCaptured = false;
+
+            while (currentRow >= 0 && currentRow < Size && currentCol >= 0 && currentCol < Size)
+            {
+                Piece currentPiece = GetPiece(currentRow, currentCol);
+
+                if (currentPiece == null)
+                {
+                    if (firstEnemy == null && !hasCaptured)
+                    {
+                        moves.Add(new Move(king, currentRow, currentCol));
+                    }
+                    else if (firstEnemy != null && !hasCaptured)
+                    {
+                        moves.Add(new Move(king, currentRow, currentCol, firstEnemy));
+                        hasCaptured = true;
+                    }
+                    else if (hasCaptured)
+                    {
+                        moves.Add(new Move(king, currentRow, currentCol, firstEnemy));
+                    }
+                }
+                else if (currentPiece.Player == king.Player)
+                {
+                    break;
+                }
+                else
+                {
+                    if (firstEnemy == null)
+                    {
+                        firstEnemy = currentPiece;
+                        enemyRow = currentRow;
+                        enemyCol = currentCol;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                currentRow += rowDir;
+                currentCol += colDir;
+            }
+
+            if (firstEnemy != null && !hasCaptured &&
+                !moves.Any(m => m.CapturedPiece == firstEnemy))
+            {
+                int jumpRow = enemyRow + rowDir;
+                int jumpCol = enemyCol + colDir;
+
+                if (jumpRow >= 0 && jumpRow < Size && jumpCol >= 0 && jumpCol < Size &&
+                    GetPiece(jumpRow, jumpCol) == null)
+                {
+                    moves.Add(new Move(king, jumpRow, jumpCol, firstEnemy));
+                }
+            }
         }
 
         public Board Clone()

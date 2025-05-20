@@ -1,0 +1,201 @@
+{
+  "Board": {
+    "_pieces": [
+      [
+        null,
+        null,
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 0,
+          "Col": 3
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 0,
+          "Col": 5
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 0,
+          "Col": 7
+        }
+      ],
+      [
+        null,
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 1,
+          "Col": 2
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 1,
+          "Col": 4
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 1,
+          "Col": 6
+        },
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 2,
+          "Col": 3
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 2,
+          "Col": 5
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 2,
+          "Col": 7
+        }
+      ],
+      [
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 3,
+          "Col": 0
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 1,
+          "Row": 3,
+          "Col": 2
+        },
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 4,
+          "Col": 5
+        },
+        null,
+        null
+      ],
+      [
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 5,
+          "Col": 0
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 5,
+          "Col": 2
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 5,
+          "Col": 4
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 5,
+          "Col": 6
+        },
+        null
+      ],
+      [
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 6,
+          "Col": 1
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 6,
+          "Col": 7
+        }
+      ],
+      [
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 7,
+          "Col": 0
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 7,
+          "Col": 2
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 7,
+          "Col": 4
+        },
+        null,
+        {
+          "Type": 0,
+          "Player": 0,
+          "Row": 7,
+          "Col": 6
+        },
+        null
+      ]
+    ]
+  },
+  "CurrentPlayer": 0,
+  "SelectedPiece": null,
+  "ValidMoves": [],
+  "IsGameOver": false,
+  "Winner": 2
+}

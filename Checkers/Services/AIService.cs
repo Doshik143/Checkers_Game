@@ -16,52 +16,150 @@ namespace Checkers.Services
 
         public Move GetBestMove(Game game)
         {
+            var allMoves = GetAllPossibleMoves(game.Board, game.CurrentPlayer);
+
+            if (!allMoves.Any()) return null;
+
+            var captureMoves = allMoves.Where(m => m.CapturedPiece != null).ToList();
+            if (captureMoves.Any())
+            {
+                allMoves = captureMoves;
+            }
+
+            var moveSequences = new List<List<Move>>();
+            foreach (var move in allMoves)
+            {
+                var sequence = new List<Move> { move };
+                ExploreMoveSequences(game.Board.Clone(), move, sequence, moveSequences);
+            }
+
+            if (moveSequences.Any())
+            {
+                var bestSequence = moveSequences
+                    .OrderByDescending(seq => seq.Count)
+                    .ThenByDescending(seq => seq.Sum(m => m.CapturedPiece?.Type == PieceType.King ? 2 : 1))
+                    .First();
+
+                return bestSequence.First();
+            }
+
             switch (_difficulty)
             {
                 case Difficulty.Easy:
-                    return GetRandomMove(game);
+                    return GetRandomMove(allMoves);
                 case Difficulty.Medium:
-                    return GetMediumMove(game);
+                    return GetMediumMove(game.Board, allMoves);
                 case Difficulty.Hard:
-                    return GetHardMove(game, 3);
+                    return GetHardMove(game.Board, allMoves, 3);
                 default:
-                    return GetRandomMove(game);
+                    return GetRandomMove(allMoves);
             }
         }
 
-        private Move GetRandomMove(Game game)
+        private void ExploreMoveSequences(Board board, Move move, List<Move> currentSequence,
+                                List<List<Move>> allSequences, int depth = 0)
         {
-            var moves = GetAllValidMoves(game.Board, game.CurrentPlayer);
+            const int maxDepth = 10;
+            if (depth > maxDepth) return;
+
+            if (board == null || move == null || currentSequence == null || allSequences == null)
+                return;
+
+            var newSequence = new List<Move>(currentSequence.Where(m =>
+                m != null &&
+                m.Piece != null &&
+                m.CapturedPiece != null));
+
+            newSequence.Add(move);
+
+            if (board.GetPiece(move.Piece.Row, move.Piece.Col) == null)
+                return;
+
+            var newBoard = board.Clone();
+            var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+
+            if (piece == null) return;
+
+            newBoard.MovePiece(piece, move.ToRow, move.ToCol);
+
+            if (move.CapturedPiece != null)
+            {
+                newBoard.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
+            }
+
+            var nextMoves = newBoard.GetValidMoves(newBoard.GetPiece(move.ToRow, move.ToCol))
+                .Where(m => m?.CapturedPiece != null)
+                .ToList();
+
+            if (nextMoves.Any())
+            {
+                foreach (var nextMove in nextMoves)
+                {
+                    if (nextMove != null)
+                    {
+                        ExploreMoveSequences(newBoard, nextMove, newSequence, allSequences, depth + 1);
+                    }
+                }
+            }
+            else
+            {
+                allSequences.Add(newSequence);
+            }
+        }
+
+        private List<Move> GetAllPossibleMoves(Board board, PlayerType player)
+        {
+            var allMoves = new List<Move>();
+            for (int row = 0; row < Board.Size; row++)
+            {
+                for (int col = 0; col < Board.Size; col++)
+                {
+                    var piece = board.GetPiece(row, col);
+                    if (piece != null && piece.Player == player)
+                    {
+                        allMoves.AddRange(board.GetValidMoves(piece));
+                    }
+                }
+            }
+            return allMoves;
+        }
+
+        private Move GetRandomMove(List<Move> moves)
+        {
             return moves.Count > 0 ? moves[_random.Next(moves.Count)] : null;
         }
 
-        private Move GetMediumMove(Game game)
+        private Move GetMediumMove(Board board, List<Move> moves)
         {
-            var moves = GetAllValidMoves(game.Board, game.CurrentPlayer);
-            var captures = moves.Where(m => m.CapturedPiece != null).ToList();
-
-            if (captures.Any())
+            return moves.OrderByDescending(m =>
             {
-                return captures.OrderByDescending(m =>
-                    m.CapturedPiece.Type == PieceType.King ? 3 : 1)
-                    .First();
-            }
-            return GetRandomMove(game);
+                var piece = m.Piece;
+                if (piece.Type == PieceType.King) return 0;
+
+                bool willBecomeKing = (piece.Player == PlayerType.White && m.ToRow == 0) ||
+                                     (piece.Player == PlayerType.Black && m.ToRow == Board.Size - 1);
+
+                return willBecomeKing ? 2 : (m.CapturedPiece != null ? 1 : 0);
+            }).FirstOrDefault();
         }
 
-        private Move GetHardMove(Game game, int depth)
+        private Move GetHardMove(Board board, List<Move> moves, int depth)
         {
-            var moves = GetAllValidMoves(game.Board, game.CurrentPlayer);
             Move bestMove = null;
             int bestScore = int.MinValue;
 
             foreach (var move in moves)
             {
-                var newBoard = game.Board.Clone();
-                var newGame = new Game { Board = newBoard, CurrentPlayer = game.CurrentPlayer };
-                newGame.MakeMove(move);
+                var newBoard = board.Clone();
+                var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+                newBoard.MovePiece(piece, move.ToRow, move.ToCol);
 
-                int score = Minimax(newGame, depth - 1, int.MinValue, int.MaxValue, false);
+                if (move.CapturedPiece != null)
+                {
+                    newBoard.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
+                }
+
+                int score = Minimax(newBoard, depth - 1, int.MinValue, int.MaxValue, false);
 
                 if (score > bestScore)
                 {
@@ -70,26 +168,35 @@ namespace Checkers.Services
                 }
             }
 
-            return bestMove ?? GetMediumMove(game);
+            return bestMove ?? GetMediumMove(board, moves);
         }
 
-        private int Minimax(Game game, int depth, int alpha, int beta, bool maximizingPlayer)
+        private int Minimax(Board board, int depth, int alpha, int beta, bool maximizingPlayer)
         {
-            if (depth == 0 || game.IsGameOver)
-                return EvaluateBoard(game.Board, maximizingPlayer ? PlayerType.Black : PlayerType.White);
+            if (depth == 0)
+                return EvaluateBoard(board);
 
-            var moves = GetAllValidMoves(game.Board, game.CurrentPlayer);
+            var currentPlayer = maximizingPlayer ? PlayerType.Black : PlayerType.White;
+            var moves = GetAllPossibleMoves(board, currentPlayer);
+
+            var captureMoves = moves.Where(m => m.CapturedPiece != null).ToList();
+            if (captureMoves.Any()) moves = captureMoves;
 
             if (maximizingPlayer)
             {
                 int maxEval = int.MinValue;
                 foreach (var move in moves)
                 {
-                    var newBoard = game.Board.Clone();
-                    var newGame = new Game { Board = newBoard, CurrentPlayer = game.CurrentPlayer };
-                    newGame.MakeMove(move);
+                    var newBoard = board.Clone();
+                    var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+                    newBoard.MovePiece(piece, move.ToRow, move.ToCol);
 
-                    int eval = Minimax(newGame, depth - 1, alpha, beta, false);
+                    if (move.CapturedPiece != null)
+                    {
+                        newBoard.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
+                    }
+
+                    int eval = Minimax(newBoard, depth - 1, alpha, beta, false);
                     maxEval = Math.Max(maxEval, eval);
                     alpha = Math.Max(alpha, eval);
                     if (beta <= alpha) break;
@@ -101,11 +208,16 @@ namespace Checkers.Services
                 int minEval = int.MaxValue;
                 foreach (var move in moves)
                 {
-                    var newBoard = game.Board.Clone();
-                    var newGame = new Game { Board = newBoard, CurrentPlayer = game.CurrentPlayer };
-                    newGame.MakeMove(move);
+                    var newBoard = board.Clone();
+                    var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+                    newBoard.MovePiece(piece, move.ToRow, move.ToCol);
 
-                    int eval = Minimax(newGame, depth - 1, alpha, beta, true);
+                    if (move.CapturedPiece != null)
+                    {
+                        newBoard.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
+                    }
+
+                    int eval = Minimax(newBoard, depth - 1, alpha, beta, true);
                     minEval = Math.Min(minEval, eval);
                     beta = Math.Min(beta, eval);
                     if (beta <= alpha) break;
@@ -114,7 +226,7 @@ namespace Checkers.Services
             }
         }
 
-        private int EvaluateBoard(Board board, PlayerType player)
+        private int EvaluateBoard(Board board)
         {
             int score = 0;
             for (int row = 0; row < Board.Size; row++)
@@ -124,17 +236,26 @@ namespace Checkers.Services
                     var piece = board.GetPiece(row, col);
                     if (piece != null)
                     {
-                        int pieceValue = piece.Type == PieceType.King ? 3 : 1;
-                        int positionValue = piece.Player == PlayerType.Black ? row : (Board.Size - 1 - row);
+                        int pieceValue = piece.Type == PieceType.King ? 5 : 1;
+                        int positionValue = GetPositionValue(row, col, piece.Player, piece.Type);
 
-                        if (piece.Player == player)
-                            score += pieceValue + positionValue / 2;
+                        if (piece.Player == PlayerType.Black)
+                            score += pieceValue + positionValue;
                         else
-                            score -= pieceValue + positionValue / 2;
+                            score -= pieceValue + positionValue;
                     }
                 }
             }
             return score;
+        }
+
+        private int GetPositionValue(int row, int col, PlayerType player, PieceType type)
+        {
+            if (type == PieceType.King) return 0;
+
+            return player == PlayerType.White
+                ? (Board.Size - 1 - row) * 2
+                : row * 2;
         }
 
         private List<Move> GetAllValidMoves(Board board, PlayerType player)
