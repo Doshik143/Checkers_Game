@@ -16,7 +16,8 @@ namespace Checkers.Services
 
         public Move GetBestMove(Game game)
         {
-            var allMoves = GetAllPossibleMoves(game.Board, game.CurrentPlayer);
+            var clone = game.Board.Clone();
+            var allMoves = GetAllPossibleMoves(clone, game.CurrentPlayer);
 
             if (!allMoves.Any()) return null;
 
@@ -59,7 +60,7 @@ namespace Checkers.Services
         }
 
         private void ExploreMoveSequences(Board board, Move move, List<Move> currentSequence,
-                                List<List<Move>> allSequences, int depth = 0)
+                        List<List<Move>> allSequences, int depth = 0)
         {
             const int maxDepth = 10;
             if (depth > maxDepth) return;
@@ -67,45 +68,37 @@ namespace Checkers.Services
             if (board == null || move == null || currentSequence == null || allSequences == null)
                 return;
 
-            var newSequence = new List<Move>(currentSequence.Where(m =>
-                m != null &&
-                m.Piece != null &&
-                m.CapturedPiece != null));
-
-            newSequence.Add(move);
-
-            if (board.GetPiece(move.Piece.Row, move.Piece.Col) == null)
-                return;
-
             var newBoard = board.Clone();
-            var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
 
+            var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
             if (piece == null) return;
 
-            newBoard.MovePiece(piece, move.ToRow, move.ToCol);
+            var captured = move.CapturedPiece != null
+                ? newBoard.GetPiece(move.CapturedPiece.Row, move.CapturedPiece.Col)
+                : null;
 
-            if (move.CapturedPiece != null)
-            {
-                newBoard.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
-            }
+            var newMove = new Move(piece, move.ToRow, move.ToCol, captured);
 
-            var nextMoves = newBoard.GetValidMoves(newBoard.GetPiece(move.ToRow, move.ToCol))
+            newBoard.MovePiece(piece, newMove.ToRow, newMove.ToCol);
+            if (captured != null)
+                newBoard.RemovePiece(captured.Row, captured.Col);
+
+            var nextMoves = newBoard.GetValidMoves(piece)
                 .Where(m => m?.CapturedPiece != null)
                 .ToList();
+
+            var updatedSequence = new List<Move>(currentSequence) { newMove };
 
             if (nextMoves.Any())
             {
                 foreach (var nextMove in nextMoves)
                 {
-                    if (nextMove != null)
-                    {
-                        ExploreMoveSequences(newBoard, nextMove, newSequence, allSequences, depth + 1);
-                    }
+                    ExploreMoveSequences(newBoard, nextMove, updatedSequence, allSequences, depth + 1);
                 }
             }
             else
             {
-                allSequences.Add(newSequence);
+                allSequences.Add(updatedSequence);
             }
         }
 
@@ -208,18 +201,17 @@ namespace Checkers.Services
                 foreach (var move in moves)
                 {
                     var newBoard = board.Clone();
+
                     var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+                    if (piece == null) continue;
+
+                    var captured = move.CapturedPiece != null
+                        ? newBoard.GetPiece(move.CapturedPiece.Row, move.CapturedPiece.Col)
+                        : null;
+
                     newBoard.MovePiece(piece, move.ToRow, move.ToCol);
-
-                    if (move.CapturedPiece != null)
-                    {
-                        newBoard.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
-                    }
-
-                    int eval = Minimax(newBoard, depth - 1, alpha, beta, false);
-                    maxEval = Math.Max(maxEval, eval);
-                    alpha = Math.Max(alpha, eval);
-                    if (beta <= alpha) break;
+                    if (captured != null)
+                        newBoard.RemovePiece(captured.Row, captured.Col);
                 }
                 return maxEval;
             }
@@ -230,7 +222,15 @@ namespace Checkers.Services
                 {
                     var newBoard = board.Clone();
                     var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+                    if (piece == null) continue;
+
+                    var captured = move.CapturedPiece != null
+                        ? newBoard.GetPiece(move.CapturedPiece.Row, move.CapturedPiece.Col)
+                        : null;
+
                     newBoard.MovePiece(piece, move.ToRow, move.ToCol);
+                    if (captured != null)
+                        newBoard.RemovePiece(captured.Row, captured.Col);
 
                     if (move.CapturedPiece != null)
                     {
