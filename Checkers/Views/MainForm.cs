@@ -19,6 +19,8 @@ namespace Checkers.Views
 
         private PlayerType _humanPlayerColor = PlayerType.White;
 
+        private ToolStripLabel _statusLabel;
+
         public MainForm()
         {
             _pieceBrushes = new Brush[]
@@ -69,13 +71,23 @@ namespace Checkers.Views
                 new ToolStripMenuItem("Вихід", null, (s, e) => Close())
             });
 
+            menu.Items.Add(gameMenu);
+
+            _statusLabel = new ToolStripLabel
+            {
+                Text = "Хід: Білі",
+                Alignment = ToolStripItemAlignment.Left,
+                Margin = new Padding(150, 0, 0, 0),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            menu.Items.Add(_statusLabel);
+
             var undoButton = new ToolStripMenuItem("⏪ Скасувати хід", null, (s, e) => _controller.UndoLastMove())
             {
                 Alignment = ToolStripItemAlignment.Right
             };
             menu.Items.Add(undoButton);
 
-            menu.Items.Add(gameMenu);
             Controls.Add(menu);
         }
 
@@ -223,8 +235,19 @@ namespace Checkers.Views
 
         public void UpdateGameState()
         {
+            if (_controller != null)
+            {
+                var game = _controller.GetGame();
+
+                if (_statusLabel != null && game != null)
+                {
+                    _statusLabel.Text = $"Хід: {(game.CurrentPlayer == PlayerType.White ? "Білі" : "Чорні")}";
+                }
+            }
+
             Invalidate();
         }
+
 
         public void ShowGameOver(PlayerType winner)
         {
