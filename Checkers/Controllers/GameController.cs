@@ -5,7 +5,6 @@ using System;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Linq;
-using CheckersGame.Services;
 
 namespace Checkers.Controllers
 {
@@ -19,6 +18,10 @@ namespace Checkers.Controllers
         private Stopwatch _gameTimer;
         private readonly GameSaver _gameSaver = new GameSaver();
         public GameStatistics GetStatistics() => _stats;
+        private bool _playAgainstAI = false;
+        private PlayerType _humanPlayerColor = PlayerType.White;
+
+        public bool IsTournamentMode { get; set; } = false;
 
         public GameController(MainForm view)
         {
@@ -30,43 +33,70 @@ namespace Checkers.Controllers
             NewGame();
         }
 
-        public void NewGame()
+        public void NewGame(bool autoStart = false)
         {
-            _gameTimer?.Stop();
+            if (!autoStart)
+            {
+                using (var settingsForm = new GameSettingsForm())
+                {
+                    if (settingsForm.ShowDialog() != DialogResult.OK)
+                        return;
+                    _view.SetStyle(settingsForm.SelectedStyle);
+                    _playAgainstAI = settingsForm.PlayAgainstAI;
+                    _humanPlayerColor = settingsForm.PlayerColor;
+
+                    if (_playAgainstAI)
+                        _ai.SetDifficulty(settingsForm.SelectedDifficulty);
+                }
+            }
+
+            _view.SetHumanPlayerColor(_humanPlayerColor);
             _game = new Game();
             _gameTimer = Stopwatch.StartNew();
             _view.UpdateGameState();
+
+            if (_playAgainstAI && _humanPlayerColor == PlayerType.Black)
+                MakeAIMove();
+        }
+
+        private void MakeAIMove()
+        {
+            var timer = new Timer { Interval = 500 };
+            timer.Tick += (s, e) =>
+            {
+                timer.Stop();
+                var move = _ai.GetBestMove(_game);
+                if (move != null)
+                {
+                    _game.MakeMove(move);
+                    _view.UpdateGameState();
+                    FinalizeGameIfOver();
+
+                    if (_game.CurrentPlayer != _humanPlayerColor &&
+                        _game.ValidMoves.Any(m => m.CapturedPiece != null))
+                    {
+                        MakeAIMove();
+                    }
+                }
+            };
+            timer.Start();
         }
 
         public void HandleClick(int row, int col)
         {
-            if (_game.IsGameOver) return;
+            if (_game.IsGameOver)
+                return;
+
+            if (_playAgainstAI && _game.CurrentPlayer != _humanPlayerColor)
+                return;
 
             _game.SelectPiece(row, col);
             _view.UpdateGameState();
             FinalizeGameIfOver();
 
-            if (_game.CurrentPlayer == PlayerType.Black && !_game.IsGameOver)
+            if (_playAgainstAI && _game.CurrentPlayer != _humanPlayerColor && !_game.IsGameOver)
             {
-                var timer = new Timer { Interval = 500 };
-                timer.Tick += (s, e) =>
-                {
-                    timer.Stop();
-                    var move = _ai.GetBestMove(_game);
-                    if (move != null)
-                    {
-                        _game.MakeMove(move);
-                        _view.UpdateGameState();
-                        FinalizeGameIfOver();
-
-                        if (_game.CurrentPlayer == PlayerType.Black &&
-                            _game.ValidMoves.Any(m => m.CapturedPiece != null))
-                        {
-                            HandleClick(0, 0);
-                        }
-                    }
-                };
-                timer.Start();
+                MakeAIMove();
             }
         }
 
@@ -77,7 +107,13 @@ namespace Checkers.Controllers
                 _gameTimer.Stop();
                 _stats.RecordGame(_game.Winner, _gameTimer.Elapsed);
                 _stats.SaveToFile("stats.dat");
-                _view.ShowGameOver(_game.Winner);
+
+                if (!IsTournamentMode)
+                {
+                    _view.ShowGameOver(_game.Winner, _view.GetCurrentStyle());
+                }
+
+                OnGameFinished?.Invoke(_game.Winner);
             }
         }
 
@@ -123,6 +159,25 @@ namespace Checkers.Controllers
             }
         }
 
+        public void UndoLastMove()
+        {
+            if (_game == null || _game.IsGameOver) return;
+
+            if (_playAgainstAI)
+            {
+                _game.Undo(); //AI
+                _game.Undo(); //Player
+            }
+            else
+            {
+                _game.Undo(); //OnlyPlayer
+            }
+
+            _view.UpdateGameState();
+        }
+
         public Game GetGame() => _game;
+
+        public event Action<PlayerType> OnGameFinished;
     }
 }

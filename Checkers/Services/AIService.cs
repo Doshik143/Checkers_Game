@@ -7,7 +7,7 @@ namespace Checkers.Services
 {
     public class AIService
     {
-        public enum Difficulty { Easy, Medium, Hard }
+        public enum Difficulty { Easy, Medium, Hard, Pro }
 
         private readonly Random _random = new Random();
         private Difficulty _difficulty = Difficulty.Medium;
@@ -16,7 +16,8 @@ namespace Checkers.Services
 
         public Move GetBestMove(Game game)
         {
-            var allMoves = GetAllPossibleMoves(game.Board, game.CurrentPlayer);
+            var clone = game.Board.Clone();
+            var allMoves = GetAllPossibleMoves(clone, game.CurrentPlayer);
 
             if (!allMoves.Any()) return null;
 
@@ -51,13 +52,15 @@ namespace Checkers.Services
                     return GetMediumMove(game.Board, allMoves);
                 case Difficulty.Hard:
                     return GetHardMove(game.Board, allMoves, 3);
+                case Difficulty.Pro:
+                    return GetHardMove(game.Board, allMoves, 6);
                 default:
                     return GetRandomMove(allMoves);
             }
         }
 
         private void ExploreMoveSequences(Board board, Move move, List<Move> currentSequence,
-                                List<List<Move>> allSequences, int depth = 0)
+                        List<List<Move>> allSequences, int depth = 0)
         {
             const int maxDepth = 10;
             if (depth > maxDepth) return;
@@ -65,45 +68,37 @@ namespace Checkers.Services
             if (board == null || move == null || currentSequence == null || allSequences == null)
                 return;
 
-            var newSequence = new List<Move>(currentSequence.Where(m =>
-                m != null &&
-                m.Piece != null &&
-                m.CapturedPiece != null));
-
-            newSequence.Add(move);
-
-            if (board.GetPiece(move.Piece.Row, move.Piece.Col) == null)
-                return;
-
             var newBoard = board.Clone();
-            var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
 
+            var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
             if (piece == null) return;
 
-            newBoard.MovePiece(piece, move.ToRow, move.ToCol);
+            var captured = move.CapturedPiece != null
+                ? newBoard.GetPiece(move.CapturedPiece.Row, move.CapturedPiece.Col)
+                : null;
 
-            if (move.CapturedPiece != null)
-            {
-                newBoard.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
-            }
+            var newMove = new Move(piece, move.ToRow, move.ToCol, captured);
 
-            var nextMoves = newBoard.GetValidMoves(newBoard.GetPiece(move.ToRow, move.ToCol))
+            newBoard.MovePiece(piece, newMove.ToRow, newMove.ToCol);
+            if (captured != null)
+                newBoard.RemovePiece(captured.Row, captured.Col);
+
+            var nextMoves = newBoard.GetValidMoves(piece)
                 .Where(m => m?.CapturedPiece != null)
                 .ToList();
+
+            var updatedSequence = new List<Move>(currentSequence) { newMove };
 
             if (nextMoves.Any())
             {
                 foreach (var nextMove in nextMoves)
                 {
-                    if (nextMove != null)
-                    {
-                        ExploreMoveSequences(newBoard, nextMove, newSequence, allSequences, depth + 1);
-                    }
+                    ExploreMoveSequences(newBoard, nextMove, updatedSequence, allSequences, depth + 1);
                 }
             }
             else
             {
-                allSequences.Add(newSequence);
+                allSequences.Add(updatedSequence);
             }
         }
 
@@ -133,15 +128,33 @@ namespace Checkers.Services
         {
             return moves.OrderByDescending(m =>
             {
-                var piece = m.Piece;
-                if (piece.Type == PieceType.King) return 0;
+                var tempBoard = board.Clone();
+                var piece = tempBoard.GetPiece(m.Piece.Row, m.Piece.Col);
+                tempBoard.MovePiece(piece, m.ToRow, m.ToCol);
 
-                bool willBecomeKing = (piece.Player == PlayerType.White && m.ToRow == 0) ||
-                                     (piece.Player == PlayerType.Black && m.ToRow == Board.Size - 1);
+                if (m.CapturedPiece != null)
+                {
+                    tempBoard.RemovePiece(m.CapturedPiece.Row, m.CapturedPiece.Col);
+                }
 
-                return willBecomeKing ? 2 : (m.CapturedPiece != null ? 1 : 0);
+                bool becomesKing = (piece.Player == PlayerType.White && m.ToRow == 0) ||
+                                   (piece.Player == PlayerType.Black && m.ToRow == Board.Size - 1);
+
+                bool canBeCaptured = GetAllPossibleMoves(tempBoard, Opponent(piece.Player))
+                    .Any(enemyMove => enemyMove.CapturedPiece != null &&
+                                      enemyMove.ToRow == piece.Row && enemyMove.ToCol == piece.Col);
+
+                int score = 0;
+                if (becomesKing) score += 3;
+                if (m.CapturedPiece != null) score += 2;
+                if (canBeCaptured) score -= 4;
+
+                return score;
             }).FirstOrDefault();
         }
+
+        private PlayerType Opponent(PlayerType player) =>
+            player == PlayerType.White ? PlayerType.Black : PlayerType.White;
 
         private Move GetHardMove(Board board, List<Move> moves, int depth)
         {
@@ -188,18 +201,17 @@ namespace Checkers.Services
                 foreach (var move in moves)
                 {
                     var newBoard = board.Clone();
+
                     var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+                    if (piece == null) continue;
+
+                    var captured = move.CapturedPiece != null
+                        ? newBoard.GetPiece(move.CapturedPiece.Row, move.CapturedPiece.Col)
+                        : null;
+
                     newBoard.MovePiece(piece, move.ToRow, move.ToCol);
-
-                    if (move.CapturedPiece != null)
-                    {
-                        newBoard.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
-                    }
-
-                    int eval = Minimax(newBoard, depth - 1, alpha, beta, false);
-                    maxEval = Math.Max(maxEval, eval);
-                    alpha = Math.Max(alpha, eval);
-                    if (beta <= alpha) break;
+                    if (captured != null)
+                        newBoard.RemovePiece(captured.Row, captured.Col);
                 }
                 return maxEval;
             }
@@ -210,7 +222,15 @@ namespace Checkers.Services
                 {
                     var newBoard = board.Clone();
                     var piece = newBoard.GetPiece(move.Piece.Row, move.Piece.Col);
+                    if (piece == null) continue;
+
+                    var captured = move.CapturedPiece != null
+                        ? newBoard.GetPiece(move.CapturedPiece.Row, move.CapturedPiece.Col)
+                        : null;
+
                     newBoard.MovePiece(piece, move.ToRow, move.ToCol);
+                    if (captured != null)
+                        newBoard.RemovePiece(captured.Row, captured.Col);
 
                     if (move.CapturedPiece != null)
                     {
@@ -229,24 +249,43 @@ namespace Checkers.Services
         private int EvaluateBoard(Board board)
         {
             int score = 0;
+
             for (int row = 0; row < Board.Size; row++)
             {
                 for (int col = 0; col < Board.Size; col++)
                 {
                     var piece = board.GetPiece(row, col);
-                    if (piece != null)
-                    {
-                        int pieceValue = piece.Type == PieceType.King ? 5 : 1;
-                        int positionValue = GetPositionValue(row, col, piece.Player, piece.Type);
+                    if (piece == null) continue;
 
-                        if (piece.Player == PlayerType.Black)
-                            score += pieceValue + positionValue;
-                        else
-                            score -= pieceValue + positionValue;
-                    }
+                    int pieceValue = piece.Type == PieceType.King ? 10 : 3;
+
+                    bool isCentral = row >= 2 && row <= 5 && col >= 2 && col <= 5;
+                    int centralBonus = isCentral ? 1 : 0;
+
+                    bool isEdge = row == 0 || row == 7 || col == 0 || col == 7;
+                    int edgePenalty = isEdge ? -1 : 0;
+
+                    bool isVulnerable = IsVulnerable(board, piece);
+
+                    int vulnerabilityPenalty = isVulnerable ? -4 : 0;
+
+                    int total = pieceValue + centralBonus + edgePenalty + vulnerabilityPenalty;
+
+                    score += piece.Player == PlayerType.Black ? total : -total;
                 }
             }
+
             return score;
+        }
+
+        private bool IsVulnerable(Board board, Piece piece)
+        {
+            var opponent = piece.Player == PlayerType.White ? PlayerType.Black : PlayerType.White;
+            var opponentMoves = GetAllPossibleMoves(board, opponent);
+
+            return opponentMoves.Any(m => m.CapturedPiece != null &&
+                                          m.CapturedPiece.Row == piece.Row &&
+                                          m.CapturedPiece.Col == piece.Col);
         }
 
         private int GetPositionValue(int row, int col, PlayerType player, PieceType type)

@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\GameController.cs" />
+    <Compile Include="Controllers\TournamentManager.cs" />
     <Compile Include="Models\Board.cs" />
     <Compile Include="Models\Game.cs" />
     <Compile Include="Models\GameState.cs" />
@@ -62,7 +63,22 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AIService.cs" />
     <Compile Include="Services\GameSaver.cs" />
+    <Compile Include="Views\GameOverForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\GameSettingsForm.cs.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Views\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TournamentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TournamentResultsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TournamentStatusForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <EmbeddedResource Include="Properties\Resources.resx">
