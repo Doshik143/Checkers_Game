@@ -6,7 +6,7 @@ namespace Checkers.Views
 {
     public class GameOverForm : Form
     {
-        public GameOverForm(PlayerType winner)
+        public GameOverForm(PlayerType winner, string style)
         {
             Text = "Гра завершена";
             Width = 300;
@@ -16,9 +16,16 @@ namespace Checkers.Views
             MaximizeBox = false;
             MinimizeBox = false;
 
+            string winnerText;
+
+            if (style == "Хвостики")
+                winnerText = winner == PlayerType.White ? "Ковбаса" : "Хвостики";
+            else
+                winnerText = winner == PlayerType.White ? "Білі шашки" : "Чорні шашки";
+
             var label = new Label
             {
-                Text = $"Перемогли {(winner == PlayerType.White ? "білі" : "чорні")} шашки!",
+                Text = $"Переможець: {winnerText}!",
                 TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 40,

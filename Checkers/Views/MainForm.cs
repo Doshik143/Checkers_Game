@@ -21,6 +21,8 @@ namespace Checkers.Views
 
         private ToolStripLabel _statusLabel;
 
+        private string _style = "Шашки";
+
         public MainForm()
         {
             _pieceBrushes = new Brush[]
@@ -106,7 +108,6 @@ namespace Checkers.Views
             DrawBoard(e.Graphics);
             DrawPieces(e.Graphics);
             DrawValidMoves(e.Graphics);
-            DrawGameStatus(e.Graphics);
         }
 
         private void DrawBoard(Graphics g)
@@ -144,8 +145,18 @@ namespace Checkers.Views
                         int y = visualRow * CellSize + PieceOffset;
 
                         // Drawing a checker
-                        g.FillEllipse(_pieceBrushes[brushIndex], x, y, PieceSize, PieceSize);
-                        g.DrawEllipse(Pens.Black, x, y, PieceSize, PieceSize);
+                        if (_style == "Хвостики")
+                        {
+                            if (piece.Player == PlayerType.White)
+                                DrawSausage(g, x, y, PieceSize);
+                            else
+                                DrawCatHead(g, x, y, PieceSize);
+                        }
+                        else
+                        {
+                            g.FillEllipse(_pieceBrushes[brushIndex], x, y, PieceSize, PieceSize);
+                            g.DrawEllipse(Pens.Black, x, y, PieceSize, PieceSize);
+                        }
 
                         // Drawing a crown
                         if (piece.Type == PieceType.King)
@@ -175,6 +186,71 @@ namespace Checkers.Views
             }
         }
 
+        private void DrawSausage(Graphics g, int x, int y, int size)
+        {
+            var rect = new Rectangle(x + 5, y + size / 4, size - 10, size / 2);
+            using (var brush = new SolidBrush(Color.LightPink))
+            using (var pen = new Pen(Color.Brown, 2))
+            {
+                g.FillEllipse(brush, rect);
+                g.DrawEllipse(pen, rect);
+            }
+
+            var dotBrush = Brushes.White;
+            var rand = new Random();
+            int dotCount = 8;
+            int dotSize = 4;
+
+            for (int i = 0; i < dotCount; i++)
+            {
+                int dx = rand.Next(rect.Left + 5, rect.Right - 5 - dotSize);
+                int dy = rand.Next(rect.Top + 5, rect.Bottom - 5 - dotSize);
+
+                g.FillEllipse(dotBrush, dx, dy, dotSize, dotSize);
+            }
+        }
+
+        private void DrawCatHead(Graphics g, int x, int y, int size)
+        {
+            var headRect = new Rectangle(x + 4, y + 4, size - 8, size - 8);
+            using (var headBrush = new SolidBrush(Color.Black))
+            {
+                g.FillEllipse(headBrush, headRect);
+
+                Point[] leftEar = {
+                    new Point(x + size / 4, y + 6),
+                    new Point(x + size / 3, y - 6),
+                    new Point(x + size / 2, y + 6)
+                };
+                Point[] rightEar = {
+                    new Point(x + size / 2, y + 6),
+                    new Point(x + 2 * size / 3, y - 6),
+                    new Point(x + 3 * size / 4, y + 6)
+                };
+                g.FillPolygon(headBrush, leftEar);
+                g.FillPolygon(headBrush, rightEar);
+            }
+
+            using (var eyeBrush = new SolidBrush(Color.Yellow))
+            {
+                g.FillEllipse(eyeBrush, x + size / 3 - 3, y + size / 3, 6, 6);
+                g.FillEllipse(eyeBrush, x + 2 * size / 3 - 3, y + size / 3, 6, 6);
+            }
+
+            using (var pen = new Pen(Color.White, 1.5f))
+            {
+                int cx = x + size / 2;
+                int cy = y + size * 2 / 3;
+
+                Point start = new Point(cx - 6, cy);
+                Point control1 = new Point(cx - 3, cy + 6);
+                Point control2 = new Point(cx + 3, cy + 6);
+                Point end = new Point(cx + 6, cy);
+
+                g.DrawBezier(pen, start, control1, control2, end);
+            }
+        }
+
         private void DrawValidMoves(Graphics g)
         {
             var game = _controller.GetGame();
@@ -193,26 +269,6 @@ namespace Checkers.Views
                     centerY - markerSize,
                     markerSize * 2,
                     markerSize * 2);
-            }
-        }
-
-        private void DrawGameStatus(Graphics g)
-        {
-            var game = _controller.GetGame();
-            string status = $"Хід: {(game.CurrentPlayer == PlayerType.White ? "Білі" : "Чорні")}";
-
-            if (game.IsGameOver)
-            {
-                status = $"Гра завершена! Перемогли {(game.Winner == PlayerType.White ? "Білі" : "Чорні")} шашки!";
-                var font = new Font("Arial", 14, FontStyle.Bold);
-                var size = g.MeasureString(status, font);
-                g.DrawString(status, font, Brushes.Black,
-                    (ClientSize.Width - size.Width) / 2,
-                    (ClientSize.Height - size.Height) / 2);
-            }
-            else
-            {
-                g.DrawString(status, Font, Brushes.Black, 10, 10);
             }
         }
 
@@ -241,7 +297,18 @@ namespace Checkers.Views
 
                 if (_statusLabel != null && game != null)
                 {
-                    _statusLabel.Text = $"Хід: {(game.CurrentPlayer == PlayerType.White ? "Білі" : "Чорні")}";
+                    string currentPlayerText;
+
+                    if (_style == "Хвостики")
+                    {
+                        currentPlayerText = game.CurrentPlayer == PlayerType.White ? "Ковбаса" : "Хвостики";
+                    }
+                    else
+                    {
+                        currentPlayerText = game.CurrentPlayer == PlayerType.White ? "Білі" : "Чорні";
+                    }
+
+                    _statusLabel.Text = $"Хід: {currentPlayerText}";
                 }
             }
 
@@ -249,12 +316,11 @@ namespace Checkers.Views
         }
 
 
-        public void ShowGameOver(PlayerType winner)
+        public void ShowGameOver(PlayerType winner, string style)
         {
-            using (var form = new GameOverForm(winner))
+            using (var gameOverForm = new GameOverForm(winner, style))
             {
-                var result = form.ShowDialog();
-
+                var result = gameOverForm.ShowDialog();
                 if (result == DialogResult.Retry)
                 {
                     _controller.NewGame();
@@ -281,6 +347,12 @@ namespace Checkers.Views
             return _humanPlayerColor == PlayerType.White ? col : Board.Size - 1 - col;
         }
 
+        public void SetStyle(string style)
+        {
+            _style = style;
+            Invalidate();
+        }
+
         private void InitializeComponent()
         {
             this.SuspendLayout();
@@ -292,5 +364,7 @@ namespace Checkers.Views
             this.Name = "MainForm";
             this.ResumeLayout(false);
         }
+
+        public string GetCurrentStyle() => _style;
     }
 }

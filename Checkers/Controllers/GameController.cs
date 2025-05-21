@@ -38,6 +38,8 @@ namespace Checkers.Controllers
                 if (settingsForm.ShowDialog() != DialogResult.OK)
                     return;
 
+                _view.SetStyle(settingsForm.SelectedStyle);
+
                 _playAgainstAI = settingsForm.PlayAgainstAI;
                 _humanPlayerColor = settingsForm.PlayerColor;
 
@@ -108,7 +110,7 @@ namespace Checkers.Controllers
                 _gameTimer.Stop();
                 _stats.RecordGame(_game.Winner, _gameTimer.Elapsed);
                 _stats.SaveToFile("stats.dat");
-                _view.ShowGameOver(_game.Winner);
+                _view.ShowGameOver(_game.Winner, _view.GetCurrentStyle());
             }
         }
 

@@ -14,6 +14,7 @@ namespace Checkers.Views
         private RadioButton radioRandom;
         private ComboBox comboDifficulty;
         private Label labelDifficulty;
+        private ComboBox comboStyle;
 
         public bool PlayAgainstAI => checkAI.Checked;
 
@@ -42,6 +43,8 @@ namespace Checkers.Views
             }
         }
 
+        public string SelectedStyle => comboStyle.SelectedItem.ToString();
+
         public GameSettingsForm()
         {
             InitializeComponent();
@@ -51,17 +54,39 @@ namespace Checkers.Views
         {
             this.Text = "Налаштування гри";
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.ClientSize = new System.Drawing.Size(320, 320);
+            this.ClientSize = new System.Drawing.Size(340, 340);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.CenterParent;
+
+            // --- Game Style ---
+            Label labelStyle = new Label
+            {
+                Text = "Тип гри:",
+                Left = 20,
+                Top = 10,
+                Width = 200
+            };
+            this.Controls.Add(labelStyle);
+
+            comboStyle = new ComboBox
+            {
+                Left = 40,
+                Top = 35,
+                Width = 200,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            comboStyle.Items.AddRange(new string[] { "Шашки", "Хвостики" });
+            comboStyle.SelectedIndex = 0;
+            comboStyle.SelectedIndexChanged += (s, e) => UpdateCheckerColorOptions();
+            this.Controls.Add(comboStyle);
 
             // --- Player Type ---
             Label labelPlayers = new Label
             {
                 Text = "Оберіть гравця:",
                 Left = 20,
-                Top = 10,
+                Top = 70,
                 Width = 200
             };
             this.Controls.Add(labelPlayers);
@@ -70,7 +95,7 @@ namespace Checkers.Views
             {
                 Text = "Людина",
                 Left = 40,
-                Top = 35,
+                Top = 95,
                 Width = 200,
                 Checked = true
             };
@@ -78,7 +103,6 @@ namespace Checkers.Views
             {
                 if (checkHuman.Checked)
                     checkAI.Checked = false;
-
                 GameModeChanged();
             };
             this.Controls.Add(checkHuman);
@@ -87,14 +111,13 @@ namespace Checkers.Views
             {
                 Text = "Комп'ютер",
                 Left = 40,
-                Top = 60,
+                Top = 120,
                 Width = 200
             };
             checkAI.CheckedChanged += (s, e) =>
             {
                 if (checkAI.Checked)
                     checkHuman.Checked = false;
-
                 GameModeChanged();
             };
             this.Controls.Add(checkAI);
@@ -104,35 +127,32 @@ namespace Checkers.Views
             {
                 Text = "Колір шашок:",
                 Left = 20,
-                Top = 95,
+                Top = 155,
                 Width = 200
             };
             this.Controls.Add(labelColor);
 
             radioWhite = new RadioButton
             {
-                Text = "Білі",
                 Left = 40,
-                Top = 120,
-                Width = 60,
+                Top = 180,
+                Width = 100,
                 Checked = true
             };
             this.Controls.Add(radioWhite);
 
             radioBlack = new RadioButton
             {
-                Text = "Чорні",
-                Left = 110,
-                Top = 120,
-                Width = 70
+                Left = 140,
+                Top = 180,
+                Width = 100
             };
             this.Controls.Add(radioBlack);
 
             radioRandom = new RadioButton
             {
-                Text = "Випадкові",
-                Left = 190,
-                Top = 120,
+                Left = 240,
+                Top = 180,
                 Width = 100
             };
             this.Controls.Add(radioRandom);
@@ -142,7 +162,7 @@ namespace Checkers.Views
             {
                 Text = "Складність комп'ютера:",
                 Left = 20,
-                Top = 160,
+                Top = 215,
                 Width = 200
             };
             this.Controls.Add(labelDifficulty);
@@ -150,7 +170,7 @@ namespace Checkers.Views
             comboDifficulty = new ComboBox
             {
                 Left = 40,
-                Top = 185,
+                Top = 240,
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
@@ -158,18 +178,19 @@ namespace Checkers.Views
             comboDifficulty.SelectedIndex = 1;
             this.Controls.Add(comboDifficulty);
 
-            // --- OK ---
+            // --- OK Button ---
             Button btnOK = new Button
             {
                 Text = "OK",
-                Left = 110,
-                Top = 230,
+                Left = 120,
+                Top = 280,
                 Width = 80,
                 DialogResult = DialogResult.OK
             };
             this.Controls.Add(btnOK);
             this.AcceptButton = btnOK;
 
+            UpdateCheckerColorOptions();
             GameModeChanged();
         }
 
@@ -178,6 +199,22 @@ namespace Checkers.Views
             bool isAI = checkAI.Checked;
             labelDifficulty.Enabled = isAI;
             comboDifficulty.Enabled = isAI;
+        }
+
+        private void UpdateCheckerColorOptions()
+        {
+            if (SelectedStyle == "Хвостики")
+            {
+                radioWhite.Text = "Ковбаса";
+                radioBlack.Text = "Хвостики";
+                radioRandom.Text = "Випадкові";
+            }
+            else
+            {
+                radioWhite.Text = "Білі";
+                radioBlack.Text = "Чорні";
+                radioRandom.Text = "Випадкові";
+            }
         }
     }
 }
