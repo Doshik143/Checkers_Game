@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\GameController.cs" />
+    <Compile Include="Controllers\TournamentManager.cs" />
     <Compile Include="Models\Board.cs" />
     <Compile Include="Models\Game.cs" />
     <Compile Include="Models\GameState.cs" />
@@ -69,6 +70,15 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Views\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TournamentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TournamentResultsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TournamentStatusForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <EmbeddedResource Include="Properties\Resources.resx">

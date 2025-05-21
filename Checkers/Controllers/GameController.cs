@@ -21,6 +21,8 @@ namespace Checkers.Controllers
         private bool _playAgainstAI = false;
         private PlayerType _humanPlayerColor = PlayerType.White;
 
+        public bool IsTournamentMode { get; set; } = false;
+
         public GameController(MainForm view)
         {
             _view = view;
@@ -31,35 +33,30 @@ namespace Checkers.Controllers
             NewGame();
         }
 
-        public void NewGame()
+        public void NewGame(bool autoStart = false)
         {
-            using (var settingsForm = new GameSettingsForm())
+            if (!autoStart)
             {
-                if (settingsForm.ShowDialog() != DialogResult.OK)
-                    return;
-
-                _view.SetStyle(settingsForm.SelectedStyle);
-
-                _playAgainstAI = settingsForm.PlayAgainstAI;
-                _humanPlayerColor = settingsForm.PlayerColor;
-
-                if (_playAgainstAI)
+                using (var settingsForm = new GameSettingsForm())
                 {
-                    _ai.SetDifficulty(settingsForm.SelectedDifficulty);
+                    if (settingsForm.ShowDialog() != DialogResult.OK)
+                        return;
+                    _view.SetStyle(settingsForm.SelectedStyle);
+                    _playAgainstAI = settingsForm.PlayAgainstAI;
+                    _humanPlayerColor = settingsForm.PlayerColor;
+
+                    if (_playAgainstAI)
+                        _ai.SetDifficulty(settingsForm.SelectedDifficulty);
                 }
             }
 
             _view.SetHumanPlayerColor(_humanPlayerColor);
-
-            _gameTimer?.Stop();
             _game = new Game();
             _gameTimer = Stopwatch.StartNew();
             _view.UpdateGameState();
 
             if (_playAgainstAI && _humanPlayerColor == PlayerType.Black)
-            {
                 MakeAIMove();
-            }
         }
 
         private void MakeAIMove()
@@ -110,7 +107,13 @@ namespace Checkers.Controllers
                 _gameTimer.Stop();
                 _stats.RecordGame(_game.Winner, _gameTimer.Elapsed);
                 _stats.SaveToFile("stats.dat");
-                _view.ShowGameOver(_game.Winner, _view.GetCurrentStyle());
+
+                if (!IsTournamentMode)
+                {
+                    _view.ShowGameOver(_game.Winner, _view.GetCurrentStyle());
+                }
+
+                OnGameFinished?.Invoke(_game.Winner);
             }
         }
 
@@ -174,5 +177,7 @@ namespace Checkers.Controllers
         }
 
         public Game GetGame() => _game;
+
+        public event Action<PlayerType> OnGameFinished;
     }
 }

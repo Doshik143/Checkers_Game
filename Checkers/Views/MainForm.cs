@@ -67,6 +67,7 @@ namespace Checkers.Views
                 new ToolStripMenuItem("Нова гра", null, (s, e) => _controller.NewGame()),
                 new ToolStripMenuItem("Зберегти", null, (s, e) => _controller.SaveGame()),
                 new ToolStripMenuItem("Завантажити", null, (s, e) => _controller.LoadGame()),
+                new ToolStripMenuItem("Турнір", null, (s, e) => StartTournament()),
                 new ToolStripSeparator(),
                 new ToolStripMenuItem("Статистика", null, (s, e) => ShowStatistics()),
                 new ToolStripSeparator(),
@@ -366,5 +367,17 @@ namespace Checkers.Views
         }
 
         public string GetCurrentStyle() => _style;
+
+        private void StartTournament()
+        {
+            using (var form = new TournamentForm())
+            {
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    var tournament = new TournamentManager(_controller, this);
+                    tournament.StartTournament(form.GamesCount);
+                }
+            }
+        }
     }
 }
