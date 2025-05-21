@@ -36,6 +36,7 @@ namespace Checkers.Views
                     case 0: return AIService.Difficulty.Easy;
                     case 1: return AIService.Difficulty.Medium;
                     case 2: return AIService.Difficulty.Hard;
+                    case 3: return AIService.Difficulty.Pro;
                     default: return AIService.Difficulty.Medium;
                 }
             }
@@ -153,7 +154,7 @@ namespace Checkers.Views
                 Width = 200,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            comboDifficulty.Items.AddRange(new string[] { "Легка", "Середня", "Складна" });
+            comboDifficulty.Items.AddRange(new string[] { "Легка", "Середня", "Складна", "Профі" });
             comboDifficulty.SelectedIndex = 1;
             this.Controls.Add(comboDifficulty);
 
