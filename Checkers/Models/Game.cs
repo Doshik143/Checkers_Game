@@ -121,7 +121,16 @@ namespace Checkers.Models
             Board = state.Board.Clone();
             CurrentPlayer = state.CurrentPlayer;
             SelectedPiece = state.SelectedPiece;
-            ValidMoves = new List<Move>(state.ValidMoves);
+            ValidMoves = new List<Move>();
+            foreach (var move in state.ValidMoves)
+            {
+                var piece = Board.GetPiece(move.Piece.Row, move.Piece.Col);
+                var captured = move.CapturedPiece != null
+                    ? Board.GetPiece(move.CapturedPiece.Row, move.CapturedPiece.Col)
+                    : null;
+
+                ValidMoves.Add(new Move(piece, move.ToRow, move.ToCol, captured));
+            }
             IsGameOver = state.IsGameOver;
             Winner = state.Winner;
         }

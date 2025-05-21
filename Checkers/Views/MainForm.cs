@@ -69,6 +69,12 @@ namespace Checkers.Views
                 new ToolStripMenuItem("Вихід", null, (s, e) => Close())
             });
 
+            var undoButton = new ToolStripMenuItem("⏪ Скасувати хід", null, (s, e) => _controller.UndoLastMove())
+            {
+                Alignment = ToolStripItemAlignment.Right
+            };
+            menu.Items.Add(undoButton);
+
             menu.Items.Add(gameMenu);
             Controls.Add(menu);
         }
@@ -83,6 +89,8 @@ namespace Checkers.Views
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
+            e.Graphics.Clear(BackColor);
+
             DrawBoard(e.Graphics);
             DrawPieces(e.Graphics);
             DrawValidMoves(e.Graphics);

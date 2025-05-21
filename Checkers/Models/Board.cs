@@ -234,9 +234,15 @@ namespace Checkers.Models
             }
         }
 
+        public Board(bool initialize = true)
+        {
+            if (initialize)
+                InitializeBoard();
+        }
+
         public Board Clone()
         {
-            var newBoard = new Board();
+            var newBoard = new Board(false);
             for (int row = 0; row < Size; row++)
                 for (int col = 0; col < Size; col++)
                     if (_pieces[row, col] != null)

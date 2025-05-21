@@ -154,6 +154,23 @@ namespace Checkers.Controllers
             }
         }
 
+        public void UndoLastMove()
+        {
+            if (_game == null || _game.IsGameOver) return;
+
+            if (_playAgainstAI)
+            {
+                _game.Undo(); //AI
+                _game.Undo(); //Player
+            }
+            else
+            {
+                _game.Undo(); //OnlyPlayer
+            }
+
+            _view.UpdateGameState();
+        }
+
         public Game GetGame() => _game;
     }
 }
