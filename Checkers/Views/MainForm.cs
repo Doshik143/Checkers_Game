@@ -228,10 +228,19 @@ namespace Checkers.Views
 
         public void ShowGameOver(PlayerType winner)
         {
-            MessageBox.Show($"Гра завершена! Перемогли {(winner == PlayerType.White ? "білі" : "чорні")} шашки!",
-                "Гра закінчена",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            using (var form = new GameOverForm(winner))
+            {
+                var result = form.ShowDialog();
+
+                if (result == DialogResult.Retry)
+                {
+                    _controller.NewGame();
+                }
+                else if (result == DialogResult.Abort)
+                {
+                    Close();
+                }
+            }
         }
 
         public void SetHumanPlayerColor(PlayerType color)
