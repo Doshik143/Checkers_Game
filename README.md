@@ -44,12 +44,10 @@
 4. Гра з комп'ютером:
     - Реалізовано AI з 4 рівнями складності (легкий, середній, складний, профі) [★](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L15-L60)
     - AI надає пріоритет захопленням, багатоходовим комбінаціям, та униканню вразливих позицій [★](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L159-L289)
-
 ### 💾 Збереження та завантаження гри
 - Збереження в JSON-файл: поточна дошка, шашки, активний гравець, дамки, хід [★](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs#L21-L46)
 - Завантаження гри: з меню [★](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs#L48-L94)
 - Історія ходів зберігається для можливості їх скасування [★](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L98-L136)
-
 ### 🧩 Додаткові функції
 1. Турнірний режим:
     - Вибір кількості ігор (від 2 до 100) [★](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/TournamentForm.cs#L20-L38)
@@ -68,3 +66,11 @@
     - Класичні шашки (чорні та білі)
     - Стиль "Хвостики" (ковбаса та хвостики)
     - Передача стилю [★](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/MainForm.cs#L351-L355)
+
+## Вимоги
+- .NET Framework 4.7.2 або новіше
+- Windows OS
+## Встановлення
+1. Клонуйте репозиторій
+2. Відкрийте `CheckersGame.sln` у Visual Studio
+3. Зіберіть і запустіть проект
