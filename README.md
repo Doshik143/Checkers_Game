@@ -67,6 +67,10 @@
     - Стиль "Хвостики" (ковбаса та хвостики)
     - Передача стилю [★](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/MainForm.cs#L351-L355)
 
+---
+
+## Запуск Локально
+
 ## Вимоги
 - .NET Framework 4.7.2 або новіше
 - Windows OS
@@ -74,3 +78,60 @@
 1. Клонуйте репозиторій
 2. Відкрийте `CheckersGame.sln` у Visual Studio
 3. Зіберіть і запустіть проект
+
+---
+
+## 📐 Programming Principles
+
+| Принцип | Реалізація | Коментар |
+|--------|-------------|----------|
+| **SRP (Single Responsibility Principle)** | [`Game`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs), [`GameController`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Controllers/GameController.cs), [`GameSaver`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs), [`MainForm`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/MainForm.cs) | Кожен клас відповідає за свою окрему відповідальність |
+| **OCP (Open/Closed Principle)** | [`AIService`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/AIService.cs) підтримує додавання нових стратегій без змін старих | Добре структурований метод [`GetBestMove()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/AIService.cs#L17-L60) |
+| **LSP (Liskov Substitution Principle)** | [`Piece`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Piece.cs), [`Move`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Move.cs) використовуються взаємозамінно | Всі компоненти гри очікувано поводяться |
+| **ISP (Interface Segregation Principle)** | Класи не мають зайвих методів | Інтерфейси не перевантажені |
+| **DIP (Dependency Inversion Principle)** | Частково — залежності створюються в контролері | Можна покращити через DI |
+| **DRY** | `Clone()` → [1](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Piece.cs#L33-L39) → [2](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Board.cs#L243-L254), [`SaveState()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L106-L117) | Уникає дублювання логіки |
+| **KISS** | Простий, логічний код | Чіткий поділ між UI, логікою та збереженням |
+| **YAGNI** | Впроваджено лише необхідні функції | Немає зайвих абстракцій |
+| **Encapsulation** | Поля в [`Piece`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Piece.cs#L8-L18), Приватні поля в [`Board`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Board.cs#L12-L13), тощо | Доступ лише через методи |
+
+---
+
+## 🎨 Design Patterns
+
+| Патерн | Приклад | Коментар |
+|--------|---------|----------|
+| **MVC (Model-View-Controller)** | [`MainForm`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/MainForm.cs) (View), [`GameController`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Controllers/GameController.cs) (Controller), [`Game`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs), [`Board`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Board.cs) (Model) | Класична архітектура |
+| **Command (спрощений)** | [Undo через `GameState`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L98-L136) | Історія команд у стеку |
+| **Observer (через події)** | [`GameController.OnGameFinished`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Controllers/GameController.cs#L116) | Інформування про завершення гри |
+| **Strategy (частково)** | AI через [`switch-case`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/AIService.cs#L47-L59) по складності | Можна винести в окремі класи |
+| **Template Method** | `MakeMove()` у [`Game`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L62-L96) | Послідовність дій ходу |
+| **Factory (потенційно)** | Можна винести створення AI за рівнями | Ще не реалізовано явно |
+| **DTO** | [`GameState`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/GameState.cs), [`MoveInfo`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs#L123-L144), [`PieceInfo`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs#L106-L121) | Для передачі даних без поведінки |
+| **Singleton (імпліцитний)** | [`GameStatistics.LoadFromFile(...)`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/GameStatistics.cs#L43-L52) | Один об'єкт статистики зберігається/читається |
+
+---
+
+## 🛠️ Refactoring Techniques
+
+| Техніка | Приклад | Коментар |
+|--------|---------|----------|
+| **Extract Method** | [`DrawBoard()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/MainForm.cs#L114-L127), [`DrawPieces()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/MainForm.cs#L129-L188), [`DrawValidMoves()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/MainForm.cs#L255-L274) | Полегшення читабельності |
+| **Extract Class** | [`AIService`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/AIService.cs), [`GameSaver`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs), [`TournamentManager`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Controllers/TournamentManager.cs) | Розділення обов'язків |
+| **Encapsulate Field** | `_pieces` в [`Board`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Board.cs#L13) | Прямий доступ заборонений |
+| **Replace Magic Number** | [`Board.Size`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Board.cs#L10), [`CellSize`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Views/MainForm.cs#L11) | Покращена зрозумілість |
+| **DTO (Data Transfer Object)** | [`MoveInfo`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs#L123-144), [`PieceInfo`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs#L106-L121) | Для серіалізації |
+| **Clone Instead of Manual Copy** | [`Piece.Clone()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Piece.cs#L33-L39), [`Board.Clone()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Board.cs#L243-L254) | Для збереження станів |
+| **Use of Stack for Undo** | `_history` в [`Game`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L32) | Проста реалізація історії гри |
+| **Early Return** | `if (IsGameOver) return;` → [1](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L38) → [2](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L64)| → [3](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L100)→ [4](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Controllers/GameController.cs#L87-L88) Зниження вкладеності |
+
+---
+
+## 📌 Рекомендації
+
+- 🔁 Впровадити **DI-контейнер** (наприклад Autofac або Microsoft.Extensions.DependencyInjection)
+- ♟️ Винести логіку AI по рівнях у окремі стратегії (**Strategy Pattern**)
+- 🏭 Використати **Factory Pattern** для створення AI, гри, налаштувань
+- 📊 Можна реалізувати **Observer/EventAggregator** для розширення подій
+
+---
