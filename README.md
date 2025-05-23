@@ -123,7 +123,7 @@
 | **DTO (Data Transfer Object)** | [`MoveInfo`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs#L123-144), [`PieceInfo`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Services/GameSaver.cs#L106-L121) | Для серіалізації |
 | **Clone Instead of Manual Copy** | [`Piece.Clone()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Piece.cs#L33-L39), [`Board.Clone()`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Board.cs#L243-L254) | Для збереження станів |
 | **Use of Stack for Undo** | `_history` в [`Game`](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L32) | Проста реалізація історії гри |
-| **Early Return** | `if (IsGameOver) return;` → [1](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L38) → [2](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L64)| → [3](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L100)→ [4](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Controllers/GameController.cs#L87-L88) Зниження вкладеності |
+| **Early Return** | `if (IsGameOver) return;` → [1](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L38) → [2](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L64) → [3](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Models/Game.cs#L100)→ [4](https://github.com/Doshik143/Checkers_Game/blob/game/Checkers/Controllers/GameController.cs#L87-L88) | Зниження вкладеності |
 
 ---
 
@@ -135,3 +135,51 @@
 - 📊 Можна реалізувати **Observer/EventAggregator** для розширення подій
 
 ---
+
+## 🔢 Code Stats
+
+![Кількість рядків коду](screenshots/0.png)
+
+---
+
+## 📸 Скріншоти
+
+### 🎮 Головне меню гри (Нова гра)
+
+![Головне меню](screenshots/1.png)
+
+### ♟️ Ігрове поле (класичний стиль)
+
+![Ігрове поле — класика](screenshots/2.png)
+
+### 🐾 Ігрове поле (стиль "Хвостики")
+
+![Ігрове поле — хвостики](screenshots/3.png)
+
+### 🗂️ Вигляд меню під час гри
+
+![Меню під час гри](screenshots/4.png)
+
+### ✨ Підсвічування ходу шашки
+
+![Підсвічування ходу шашки](screenshots/5.png)
+
+### 🥇 Виведення переможця
+
+![Переможець](screenshots/6.png)
+
+### 📊 Статистика гравця
+
+![Статистика](screenshots/7.png)
+
+## 🛠️ Налаштування турніру
+
+![Налаштування](screenshots/8.png)
+
+## 🏆 Проведення турніру
+
+![Турнір](screenshots/9.png)
+
+## 🏁 Завершення турніру
+
+![Результати турніру](screenshots/10.png)

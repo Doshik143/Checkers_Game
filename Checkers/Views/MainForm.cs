@@ -364,6 +364,7 @@ namespace Checkers.Views
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "MainForm";
             this.ResumeLayout(false);
+
         }
 
         public string GetCurrentStyle() => _style;
