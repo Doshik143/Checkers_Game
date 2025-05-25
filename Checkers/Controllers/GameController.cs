@@ -124,8 +124,8 @@ namespace Checkers.Controllers
             _stats.RecordGame(_game.Winner, _gameTimer.Elapsed);
             _stats.SaveToFile("stats.dat");
 
-            if (!IsTournamentMode)
-                GameOver?.Invoke(_game.Winner, _currentStyle);
+            
+             GameOver?.Invoke(_game.Winner, _currentStyle);
 
             StateChanged?.Invoke();
         }

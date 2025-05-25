@@ -26,8 +26,15 @@ namespace Checkers.Views
         public MainForm(GameController controller)
         {
             _controller = controller ?? throw new ArgumentNullException(nameof(controller));
-
+            _controller.StateChanged += UpdateGameState;
            
+            _controller.StyleChanged += SetStyle;
+            _controller.HumanColorChanged += SetHumanPlayerColor;
+            _controller.GameOver += (winner, style) =>
+            {
+                if (!controller.IsTournamentMode)
+                    ShowGameOver(winner, style);
+            };
             _pieceBrushes = new Brush[]
             {
                 Brushes.White,

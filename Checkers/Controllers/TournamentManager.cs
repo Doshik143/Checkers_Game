@@ -5,6 +5,7 @@ using System.Windows.Forms;
 
 namespace Checkers.Controllers
 {
+   
     public class TournamentManager
     {
         private readonly GameController _controller;
@@ -17,10 +18,11 @@ namespace Checkers.Controllers
 
         public TournamentManager(GameController controller, MainForm view)
         {
-            _controller = controller;
-            _view = view;
+            _controller = controller ?? throw new ArgumentNullException(nameof(controller));
+            _view = view ?? throw new ArgumentNullException(nameof(view));
         }
 
+      
         public void StartTournament(int gamesCount)
         {
             _totalGames = gamesCount;
@@ -38,53 +40,60 @@ namespace Checkers.Controllers
 
         private void PlayNextGame()
         {
-            // Підписуємося на подію завершення гри
+           
             _controller.GameOver += OnControllerGameOver;
 
-            // Запускаємо нову гру без інтерфейсу налаштувань
+          
             _controller.NewGame(autoStart: true);
 
-            // Оновлюємо статус
-            _statusForm?.UpdateStatus(_currentGame, _totalGames, _whiteWins, _blackWins);
+            
+            _statusForm.UpdateStatus(
+                currentGame: _currentGame,
+                totalGames: _totalGames,
+                whiteWins: _whiteWins,
+                blackWins: _blackWins);
         }
 
         private void OnControllerGameOver(PlayerType winner, string style)
         {
-            // Відписуємося, щоб не отримувати дублі
+          
             _controller.GameOver -= OnControllerGameOver;
 
-            // Лічимо переможців
-            if (winner == PlayerType.White) _whiteWins++;
-            else if (winner == PlayerType.Black) _blackWins++;
+           
+            if (winner == PlayerType.White)
+                _whiteWins++;
+            else if (winner == PlayerType.Black)
+                _blackWins++;
 
             _currentGame++;
 
             if (_currentGame < _totalGames)
             {
+                
                 PlayNextGame();
             }
             else
             {
+               
                 ShowFinalResults();
             }
         }
 
         private void ShowFinalResults()
         {
-            _statusForm?.Close();
+            _statusForm.Close();
             _controller.IsTournamentMode = false;
 
-            using (var resultsForm = new TournamentResultsForm(_totalGames, _whiteWins, _blackWins))
+             var resultsForm = new TournamentResultsForm(_totalGames, _whiteWins, _blackWins);
+            var result = resultsForm.ShowDialog();
+            if (result == DialogResult.Retry)
             {
-                var result = resultsForm.ShowDialog();
-                if (result == DialogResult.Retry)
-                {
-                    StartTournament(_totalGames);
-                }
-                else if (result == DialogResult.Abort)
-                {
-                    Application.Exit();
-                }
+               
+                StartTournament(_totalGames);
+            }
+            else if (result == DialogResult.Abort)
+            {
+                Application.Exit();
             }
         }
     }
