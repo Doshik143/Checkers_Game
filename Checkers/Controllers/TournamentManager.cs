@@ -1,9 +1,7 @@
 ﻿using Checkers.Models;
-using Checkers.Services;
 using Checkers.Views;
 using System;
 using System.Windows.Forms;
-using System.Xml.Linq;
 
 namespace Checkers.Controllers
 {
@@ -40,16 +38,22 @@ namespace Checkers.Controllers
 
         private void PlayNextGame()
         {
-            _controller.NewGame(autoStart: true);
-            _controller.OnGameFinished += GameFinished;
+            // Підписуємося на подію завершення гри
+            _controller.GameOver += OnControllerGameOver;
 
+            // Запускаємо нову гру без інтерфейсу налаштувань
+            _controller.NewGame(autoStart: true);
+
+            // Оновлюємо статус
             _statusForm?.UpdateStatus(_currentGame, _totalGames, _whiteWins, _blackWins);
         }
 
-        private void GameFinished(PlayerType winner)
+        private void OnControllerGameOver(PlayerType winner, string style)
         {
-            _controller.OnGameFinished -= GameFinished;
+            // Відписуємося, щоб не отримувати дублі
+            _controller.GameOver -= OnControllerGameOver;
 
+            // Лічимо переможців
             if (winner == PlayerType.White) _whiteWins++;
             else if (winner == PlayerType.Black) _blackWins++;
 
@@ -70,13 +74,12 @@ namespace Checkers.Controllers
             _statusForm?.Close();
             _controller.IsTournamentMode = false;
 
-            using (var form = new TournamentResultsForm(_totalGames, _whiteWins, _blackWins))
+            using (var resultsForm = new TournamentResultsForm(_totalGames, _whiteWins, _blackWins))
             {
-                var result = form.ShowDialog();
-
+                var result = resultsForm.ShowDialog();
                 if (result == DialogResult.Retry)
                 {
-                    StartNewGame();
+                    StartTournament(_totalGames);
                 }
                 else if (result == DialogResult.Abort)
                 {
@@ -84,11 +87,5 @@ namespace Checkers.Controllers
                 }
             }
         }
-
-        private void StartNewGame()
-        {
-            _controller.NewGame();
-        }
-
     }
 }
