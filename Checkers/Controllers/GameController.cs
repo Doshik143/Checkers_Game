@@ -1,36 +1,52 @@
 ﻿using Checkers.Models;
-using Checkers.Views;
 using Checkers.Services;
+using Checkers.Views;
 using System;
-using System.Windows.Forms;
 using System.Diagnostics;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace Checkers.Controllers
 {
     public class GameController
     {
-        private readonly MainForm _view;
         private Game _game;
         private readonly GameSaver _saver;
         private readonly AIService _ai;
         private readonly GameStatistics _stats;
-        private Stopwatch _gameTimer;
-        private readonly GameSaver _gameSaver = new GameSaver();
-        public GameStatistics GetStatistics() => _stats;
-        private bool _playAgainstAI = false;
-        private PlayerType _humanPlayerColor = PlayerType.White;
+        private readonly Stopwatch _gameTimer;
+        private bool _playAgainstAI;
+        private PlayerType _humanPlayerColor;
+        private string _currentStyle;
 
         public bool IsTournamentMode { get; set; } = false;
 
-        public GameController(MainForm view)
+        // Події для представлення
+        public event Action StateChanged;
+        public event Action<PlayerType, string> GameOver;
+        public event Action<string> StyleChanged;
+        public event Action<PlayerType> HumanColorChanged;
+
+        /// <summary>
+        /// Доступ до статистики для діалогів.
+        /// </summary>
+        public GameStatistics GetStatistics() => _stats;
+
+        public GameController(
+            GameSaver saver,
+            GameStatistics stats,
+            AIService ai)
         {
-            _view = view;
-            _saver = new GameSaver();
-            _ai = new AIService();
-            _stats = GameStatistics.LoadFromFile("stats.dat");
+            _saver = saver ?? throw new ArgumentNullException(nameof(saver));
+            _stats = stats ?? throw new ArgumentNullException(nameof(stats));
+            _ai = ai ?? throw new ArgumentNullException(nameof(ai));
             _gameTimer = new Stopwatch();
-            NewGame();
+
+            _playAgainstAI = false;
+            _humanPlayerColor = PlayerType.White;
+            _currentStyle = "Шашки";
+
+            NewGame(autoStart: true);
         }
 
         public void NewGame(bool autoStart = false)
@@ -41,20 +57,24 @@ namespace Checkers.Controllers
                 {
                     if (settingsForm.ShowDialog() != DialogResult.OK)
                         return;
-                    _view.SetStyle(settingsForm.SelectedStyle);
+
+                    _currentStyle = settingsForm.SelectedStyle;
+                    StyleChanged?.Invoke(_currentStyle);
+
                     _playAgainstAI = settingsForm.PlayAgainstAI;
                     _humanPlayerColor = settingsForm.PlayerColor;
+                    HumanColorChanged?.Invoke(_humanPlayerColor);
 
                     if (_playAgainstAI)
                         _ai.SetDifficulty(settingsForm.SelectedDifficulty);
                 }
             }
 
-            _view.SetHumanPlayerColor(_humanPlayerColor);
             _game = new Game();
-            _gameTimer = Stopwatch.StartNew();
-            _view.UpdateGameState();
+            _gameTimer.Restart();
+            StateChanged?.Invoke();
 
+            // Якщо AI ходить першим
             if (_playAgainstAI && _humanPlayerColor == PlayerType.Black)
                 MakeAIMove();
         }
@@ -66,17 +86,19 @@ namespace Checkers.Controllers
             {
                 timer.Stop();
                 var move = _ai.GetBestMove(_game);
-                if (move != null)
-                {
-                    _game.MakeMove(move);
-                    _view.UpdateGameState();
-                    FinalizeGameIfOver();
+                if (move == null) return;
 
-                    if (_game.CurrentPlayer != _humanPlayerColor &&
-                        _game.ValidMoves.Any(m => m.CapturedPiece != null))
-                    {
-                        MakeAIMove();
-                    }
+                _game.MakeMove(move);
+                StateChanged?.Invoke();
+
+                if (_game.IsGameOver)
+                {
+                    FinalizeGameOver();
+                }
+                else if (_game.CurrentPlayer != _humanPlayerColor &&
+                         _game.ValidMoves.Any(m => m.CapturedPiece != null))
+                {
+                    MakeAIMove();
                 }
             };
             timer.Start();
@@ -84,52 +106,42 @@ namespace Checkers.Controllers
 
         public void HandleClick(int row, int col)
         {
-            if (_game.IsGameOver)
-                return;
-
-            if (_playAgainstAI && _game.CurrentPlayer != _humanPlayerColor)
-                return;
+            if (_game.IsGameOver) return;
+            if (_playAgainstAI && _game.CurrentPlayer != _humanPlayerColor) return;
 
             _game.SelectPiece(row, col);
-            _view.UpdateGameState();
-            FinalizeGameIfOver();
+            StateChanged?.Invoke();
 
-            if (_playAgainstAI && _game.CurrentPlayer != _humanPlayerColor && !_game.IsGameOver)
-            {
+            if (_game.IsGameOver)
+                FinalizeGameOver();
+            else if (_playAgainstAI && _game.CurrentPlayer != _humanPlayerColor)
                 MakeAIMove();
-            }
         }
 
-        private void FinalizeGameIfOver()
+        private void FinalizeGameOver()
         {
-            if (_game.IsGameOver)
-            {
-                _gameTimer.Stop();
-                _stats.RecordGame(_game.Winner, _gameTimer.Elapsed);
-                _stats.SaveToFile("stats.dat");
+            _gameTimer.Stop();
+            _stats.RecordGame(_game.Winner, _gameTimer.Elapsed);
+            _stats.SaveToFile("stats.dat");
 
-                if (!IsTournamentMode)
-                {
-                    _view.ShowGameOver(_game.Winner, _view.GetCurrentStyle());
-                }
+            
+             GameOver?.Invoke(_game.Winner, _currentStyle);
 
-                OnGameFinished?.Invoke(_game.Winner);
-            }
+            StateChanged?.Invoke();
         }
 
         public void SaveGame()
         {
-            var saveDialog = new SaveFileDialog
+            using (var saveDialog = new SaveFileDialog
             {
                 Filter = "JSON файли (*.json)|*.json",
                 Title = "Зберегти гру",
                 DefaultExt = "json",
                 AddExtension = true
-            };
-
-            if (saveDialog.ShowDialog() == DialogResult.OK)
+            })
             {
-                if (_gameSaver.Save(_game, saveDialog.FileName))
+                if (saveDialog.ShowDialog() == DialogResult.OK &&
+                    _saver.Save(_game, saveDialog.FileName))
                 {
                     MessageBox.Show("Гра успішно збережена!", "Успіх",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -139,22 +151,23 @@ namespace Checkers.Controllers
 
         public void LoadGame()
         {
-            var openDialog = new OpenFileDialog
+            using (var openDialog = new OpenFileDialog
             {
                 Filter = "JSON файли (*.json)|*.json",
                 Title = "Завантажити гру",
                 CheckFileExists = true
-            };
-
-            if (openDialog.ShowDialog() == DialogResult.OK)
+            })
             {
-                var loadedGame = _gameSaver.Load(openDialog.FileName);
-                if (loadedGame != null)
+                if (openDialog.ShowDialog() == DialogResult.OK)
                 {
-                    _game = loadedGame;
-                    _view.UpdateGameState();
-                    MessageBox.Show("Гра успішно завантажена!", "Успіх",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var loaded = _saver.Load(openDialog.FileName);
+                    if (loaded != null)
+                    {
+                        _game = loaded;
+                        StateChanged?.Invoke();
+                        MessageBox.Show("Гра успішно завантажена!", "Успіх",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
                 }
             }
         }
@@ -165,19 +178,17 @@ namespace Checkers.Controllers
 
             if (_playAgainstAI)
             {
-                _game.Undo(); //AI
-                _game.Undo(); //Player
+                _game.Undo(); // AI
+                _game.Undo(); // Player
             }
             else
             {
-                _game.Undo(); //OnlyPlayer
+                _game.Undo();
             }
 
-            _view.UpdateGameState();
+            StateChanged?.Invoke();
         }
 
         public Game GetGame() => _game;
-
-        public event Action<PlayerType> OnGameFinished;
     }
 }

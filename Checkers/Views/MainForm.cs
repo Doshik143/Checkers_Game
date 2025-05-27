@@ -20,11 +20,21 @@ namespace Checkers.Views
         private PlayerType _humanPlayerColor = PlayerType.White;
 
         private ToolStripLabel _statusLabel;
-
         private string _style = "Шашки";
 
-        public MainForm()
+       
+        public MainForm(GameController controller)
         {
+            _controller = controller ?? throw new ArgumentNullException(nameof(controller));
+            _controller.StateChanged += UpdateGameState;
+           
+            _controller.StyleChanged += SetStyle;
+            _controller.HumanColorChanged += SetHumanPlayerColor;
+            _controller.GameOver += (winner, style) =>
+            {
+                if (!controller.IsTournamentMode)
+                    ShowGameOver(winner, style);
+            };
             _pieceBrushes = new Brush[]
             {
                 Brushes.White,
@@ -39,12 +49,10 @@ namespace Checkers.Views
                 Brushes.Goldenrod
             };
 
-            _controller = new GameController(this);
-
+            InitializeComponent();
             SetupForm();
             SetupMenu();
         }
-
         private void SetupForm()
         {
             ClientSize = new Size(Board.Size * CellSize, Board.Size * CellSize);
@@ -360,7 +368,7 @@ namespace Checkers.Views
             // 
             // MainForm
             // 
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(1073, 528);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "MainForm";
             this.ResumeLayout(false);
