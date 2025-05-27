@@ -8,6 +8,8 @@ namespace Checkers.Models
     public class Board
     {
         public const int Size = 8;
+        private const int InitialBlackRows = 3;
+        private const int InitialWhiteStartRow = 5;
 
         [JsonProperty]
         private readonly Piece[,] _pieces = new Piece[Size, Size];
@@ -22,8 +24,10 @@ namespace Checkers.Models
                 {
                     if ((row + col) % 2 != 0)
                     {
-                        if (row < 3) _pieces[row, col] = new Piece(PlayerType.Black, row, col);
-                        else if (row > 4) _pieces[row, col] = new Piece(PlayerType.White, row, col);
+                        if (row < InitialBlackRows)
+                            _pieces[row, col] = new Piece(PlayerType.Black, row, col);
+                        else if (row >= InitialWhiteStartRow)
+                            _pieces[row, col] = new Piece(PlayerType.White, row, col);
                     }
                 }
             }
@@ -53,41 +57,60 @@ namespace Checkers.Models
             if (piece == null || _pieces == null)
                 return new List<Move>();
 
-            var allMoves = new List<Move>();
+            var allMoves = GetAllPossibleMoves(piece);
+            bool hasAnyCaptures = HasAnyCaptures(piece.Player);
+
+            return hasAnyCaptures
+                ? allMoves.Where(m => m.CapturedPiece != null).ToList()
+                : allMoves;
+        }
+
+        private List<Move> GetAllPossibleMoves(Piece piece)
+        {
+            var moves = new List<Move>();
 
             if (piece.Type == PieceType.Regular)
             {
-                int[] rowDirections = piece.Player == PlayerType.White
-                    ? new[] { -1, 1 }
-                    : new[] { 1, -1 };
-
-                foreach (int rowDir in rowDirections)
+                var directions = GetRegularPieceDirections(piece.Player);
+                foreach (var (rowDir, colDir) in directions)
                 {
-                    foreach (int colDir in new[] { -1, 1 })
-                    {
-                        CheckSimpleMoveOrCapture(piece, rowDir, colDir, allMoves);
-                    }
+                    CheckSimpleMoveOrCapture(piece, rowDir, colDir, moves);
                 }
             }
             else
             {
-                foreach (int rowDir in new[] { -1, 1 })
+                var allDirections = GetAllDirections();
+                foreach (var (rowDir, colDir) in allDirections)
                 {
-                    foreach (int colDir in new[] { -1, 1 })
-                    {
-                        CheckKingMovesInDirection(piece, rowDir, colDir, allMoves);
-                    }
+                    CheckKingMovesInDirection(piece, rowDir, colDir, moves);
                 }
             }
 
-            bool hasAnyCaptures = HasAnyCaptures(piece.Player);
+            return moves;
+        }
 
-            if (hasAnyCaptures)
+        private List<(int rowDir, int colDir)> GetRegularPieceDirections(PlayerType player)
+        {
+            var directions = new List<(int, int)>();
+
+            if (player == PlayerType.White)
             {
-                return allMoves.Where(m => m.CapturedPiece != null).ToList();
+                directions.AddRange(new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) });
+            }
+            else
+            {
+                directions.AddRange(new[] { (1, -1), (1, 1), (-1, -1), (-1, 1) });
             }
 
-            return allMoves;
+            return directions;
+        }
+
+        private List<(int rowDir, int colDir)> GetAllDirections()
+        {
+            return new List<(int, int)>
+            {
+                (-1, -1), (-1, 1), (1, -1), (1, 1)
+            };
         }
 
         private bool HasAnyCaptures(PlayerType player)
@@ -99,7 +122,7 @@ namespace Checkers.Models
                     var piece = GetPiece(row, col);
                     if (piece != null && piece.Player == player)
                     {
-                        var moves = GetRawMovesForPiece(piece);
+                        var moves = GetAllPossibleMoves(piece);
                         if (moves.Any(m => m.CapturedPiece != null))
                         {
                             return true;
@@ -110,64 +133,49 @@ namespace Checkers.Models
             return false;
         }
 
-        private List<Move> GetRawMovesForPiece(Piece piece)
-        {
-            var moves = new List<Move>();
-
-            if (piece.Type == PieceType.Regular)
-            {
-                int[] rowDirections = { -1, 1 };
-                foreach (int rowDir in rowDirections)
-                {
-                    foreach (int colDir in new[] { -1, 1 })
-                    {
-                        CheckSimpleMoveOrCapture(piece, rowDir, colDir, moves);
-                    }
-                }
-            }
-            else
-            {
-                foreach (int rowDir in new[] { -1, 1 })
-                {
-                    foreach (int colDir in new[] { -1, 1 })
-                    {
-                        CheckKingMovesInDirection(piece, rowDir, colDir, moves);
-                    }
-                }
-            }
-
-            return moves;
-        }
-
         private void CheckSimpleMoveOrCapture(Piece piece, int rowDir, int colDir, List<Move> moves)
         {
             int toRow = piece.Row + rowDir;
             int toCol = piece.Col + colDir;
 
-            if (toRow < 0 || toRow >= Size || toCol < 0 || toCol >= Size)
+            if (!IsValidPosition(toRow, toCol))
                 return;
 
             Piece targetPiece = GetPiece(toRow, toCol);
 
             if (targetPiece == null)
             {
-                if ((piece.Player == PlayerType.White && rowDir == -1) ||
-                    (piece.Player == PlayerType.Black && rowDir == 1))
+                if (CanMoveInDirection(piece, rowDir))
                 {
                     moves.Add(new Move(piece, toRow, toCol));
                 }
             }
             else if (targetPiece.Player != piece.Player)
             {
-                int jumpRow = toRow + rowDir;
-                int jumpCol = toCol + colDir;
-
-                if (jumpRow >= 0 && jumpRow < Size && jumpCol >= 0 && jumpCol < Size &&
-                    GetPiece(jumpRow, jumpCol) == null)
-                {
-                    moves.Add(new Move(piece, jumpRow, jumpCol, targetPiece));
-                }
+                TryAddCaptureMove(piece, targetPiece, rowDir, colDir, moves);
             }
+        }
+
+        private bool CanMoveInDirection(Piece piece, int rowDir)
+        {
+            return (piece.Player == PlayerType.White && rowDir == -1) ||
+                   (piece.Player == PlayerType.Black && rowDir == 1);
+        }
+
+        private void TryAddCaptureMove(Piece piece, Piece targetPiece, int rowDir, int colDir, List<Move> moves)
+        {
+            int jumpRow = targetPiece.Row + rowDir;
+            int jumpCol = targetPiece.Col + colDir;
+
+            if (IsValidPosition(jumpRow, jumpCol) && GetPiece(jumpRow, jumpCol) == null)
+            {
+                moves.Add(new Move(piece, jumpRow, jumpCol, targetPiece));
+            }
+        }
+
+        private bool IsValidPosition(int row, int col)
+        {
+            return row >= 0 && row < Size && col >= 0 && col < Size;
         }
 
         private void CheckKingMovesInDirection(Piece king, int rowDir, int colDir, List<Move> moves)
@@ -175,28 +183,15 @@ namespace Checkers.Models
             int currentRow = king.Row + rowDir;
             int currentCol = king.Col + colDir;
             Piece firstEnemy = null;
-            int enemyRow = -1, enemyCol = -1;
             bool hasCaptured = false;
 
-            while (currentRow >= 0 && currentRow < Size && currentCol >= 0 && currentCol < Size)
+            while (IsValidPosition(currentRow, currentCol))
             {
                 Piece currentPiece = GetPiece(currentRow, currentCol);
 
                 if (currentPiece == null)
                 {
-                    if (firstEnemy == null && !hasCaptured)
-                    {
-                        moves.Add(new Move(king, currentRow, currentCol));
-                    }
-                    else if (firstEnemy != null && !hasCaptured)
-                    {
-                        moves.Add(new Move(king, currentRow, currentCol, firstEnemy));
-                        hasCaptured = true;
-                    }
-                    else if (hasCaptured)
-                    {
-                        moves.Add(new Move(king, currentRow, currentCol, firstEnemy));
-                    }
+                    ProcessEmptySquareForKing(king, currentRow, currentCol, firstEnemy, hasCaptured, moves);
                 }
                 else if (currentPiece.Player == king.Player)
                 {
@@ -207,30 +202,27 @@ namespace Checkers.Models
                     if (firstEnemy == null)
                     {
                         firstEnemy = currentPiece;
-                        enemyRow = currentRow;
-                        enemyCol = currentCol;
                     }
                     else
                     {
-                        break;
+                        break; // Друга ворожа фігура - неможливо стрибнути
                     }
                 }
 
                 currentRow += rowDir;
                 currentCol += colDir;
             }
+        }
 
-            if (firstEnemy != null && !hasCaptured &&
-                !moves.Any(m => m.CapturedPiece == firstEnemy))
+        private void ProcessEmptySquareForKing(Piece king, int row, int col, Piece firstEnemy, bool hasCaptured, List<Move> moves)
+        {
+            if (firstEnemy == null && !hasCaptured)
             {
-                int jumpRow = enemyRow + rowDir;
-                int jumpCol = enemyCol + colDir;
-
-                if (jumpRow >= 0 && jumpRow < Size && jumpCol >= 0 && jumpCol < Size &&
-                    GetPiece(jumpRow, jumpCol) == null)
-                {
-                    moves.Add(new Move(king, jumpRow, jumpCol, firstEnemy));
-                }
+                moves.Add(new Move(king, row, col));
+            }
+            else if (firstEnemy != null)
+            {
+                moves.Add(new Move(king, row, col, firstEnemy));
             }
         }
 
@@ -244,12 +236,18 @@ namespace Checkers.Models
         {
             var newBoard = new Board(false);
             for (int row = 0; row < Size; row++)
+            {
                 for (int col = 0; col < Size; col++)
+                {
                     if (_pieces[row, col] != null)
+                    {
                         newBoard._pieces[row, col] = new Piece(_pieces[row, col].Player, row, col)
                         {
                             Type = _pieces[row, col].Type
                         };
+                    }
+                }
+            }
             return newBoard;
         }
     }
