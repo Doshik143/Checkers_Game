@@ -70,27 +70,9 @@ namespace Checkers.Models
                 Board.RemovePiece(move.CapturedPiece.Row, move.CapturedPiece.Col);
             }
 
-            bool canCaptureAgain = false;
-            if (move.CapturedPiece != null)
-            {
-                var nextCaptures = Board.GetValidMoves(move.Piece)
-                    .FindAll(m => m.CapturedPiece != null);
-                canCaptureAgain = nextCaptures.Count > 0;
-            }
+            bool canCaptureAgain = CanCaptureAgain(move);
 
-            if (!canCaptureAgain)
-            {
-                CurrentPlayer = CurrentPlayer == PlayerType.White ? PlayerType.Black : PlayerType.White;
-                SelectedPiece = null;
-                ValidMoves.Clear();
-            }
-            else
-            {
-                SelectedPiece = move.Piece;
-                ValidMoves = Board.GetValidMoves(SelectedPiece)
-                    .FindAll(m => m.CapturedPiece != null);
-            }
-
+            EndMove(move, canCaptureAgain);
             CheckGameOver();
             SaveState();
         }
@@ -180,6 +162,34 @@ namespace Checkers.Models
                 }
             }
             return count;
+        }
+
+        private bool CanCaptureAgain(Move move)
+        {
+            if (move.CapturedPiece != null)
+            {
+                var nextCaptures = Board.GetValidMoves(move.Piece)
+                    .FindAll(m => m.CapturedPiece != null);
+                return nextCaptures.Count > 0;
+            }
+
+            return false;
+        }
+
+        private void EndMove(Move move, bool canCaptureAgain)
+        {
+            if (!canCaptureAgain)
+            {
+                CurrentPlayer = CurrentPlayer == PlayerType.White ? PlayerType.Black : PlayerType.White;
+                SelectedPiece = null;
+                ValidMoves.Clear();
+            }
+            else
+            {
+                SelectedPiece = move.Piece;
+                ValidMoves = Board.GetValidMoves(SelectedPiece)
+                    .FindAll(m => m.CapturedPiece != null);
+            }
         }
     }
 }
