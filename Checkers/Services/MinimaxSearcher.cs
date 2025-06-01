@@ -10,23 +10,23 @@ namespace Checkers.Services
     public class MinimaxSearcher
     {
         private readonly IBoardEvaluator _evaluator;
+        private readonly MoveApplier _moveApplier;
 
-        public MinimaxSearcher(IBoardEvaluator evaluator)
+        public MinimaxSearcher(IBoardEvaluator evaluator, MoveApplier moveApplier)
         {
             _evaluator = evaluator;
+            _moveApplier = moveApplier;
         }
 
         public Move FindBestMove(Board board, PlayerType player, List<Move> moves, int depth)
         {
             Move best = null;
             int bestScore = int.MinValue;
+
             foreach (var m in moves)
             {
                 var b2 = board.Clone();
-                var p = b2.GetPiece(m.Piece.Row, m.Piece.Col);
-                var cap = m.CapturedPiece != null ? b2.GetPiece(m.CapturedPiece.Row, m.CapturedPiece.Col) : null;
-                b2.MovePiece(p, m.ToRow, m.ToCol);
-                if (cap != null) b2.RemovePiece(cap.Row, cap.Col);
+                _moveApplier.Apply(b2, m);
 
                 int score = Minimax(b2, depth - 1, int.MinValue, int.MaxValue, player != PlayerType.Black);
                 if (score > bestScore)
@@ -35,6 +35,7 @@ namespace Checkers.Services
                     best = m;
                 }
             }
+
             return best;
         }
 
@@ -53,7 +54,7 @@ namespace Checkers.Services
                 foreach (var m in moves)
                 {
                     var b2 = board.Clone();
-                    ApplyMove(b2, m);
+                    _moveApplier.Apply(b2, m);
                     value = Math.Max(value, Minimax(b2, depth - 1, alpha, beta, false));
                     alpha = Math.Max(alpha, value);
                     if (alpha >= beta) break;
@@ -65,12 +66,13 @@ namespace Checkers.Services
                 foreach (var m in moves)
                 {
                     var b2 = board.Clone();
-                    ApplyMove(b2, m);
+                    _moveApplier.Apply(b2, m);
                     value = Math.Min(value, Minimax(b2, depth - 1, alpha, beta, true));
                     beta = Math.Min(beta, value);
                     if (beta <= alpha) break;
                 }
             }
+
             return value;
         }
 
@@ -86,14 +88,6 @@ namespace Checkers.Services
                 }
             var caps = all.Where(m => m.CapturedPiece != null).ToList();
             return caps.Any() ? caps : all;
-        }
-
-        private void ApplyMove(Board board, Move m)
-        {
-            var p = board.GetPiece(m.Piece.Row, m.Piece.Col);
-            var cap = m.CapturedPiece != null ? board.GetPiece(m.CapturedPiece.Row, m.CapturedPiece.Col) : null;
-            board.MovePiece(p, m.ToRow, m.ToCol);
-            if (cap != null) board.RemovePiece(cap.Row, cap.Col);
         }
     }
 }
