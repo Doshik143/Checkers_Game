@@ -87,6 +87,7 @@
     <Compile Include="Services\JumpSequenceExplorer.cs" />
     <Compile Include="Services\MediumStrategy.cs" />
     <Compile Include="Services\MinimaxSearcher.cs" />
+    <Compile Include="Services\MoveApplier.cs" />
     <Compile Include="Services\ProStrategy.cs" />
     <Compile Include="Services\RandomProvider.cs" />
     <Compile Include="Views\GameOverForm.cs">

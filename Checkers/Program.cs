@@ -41,6 +41,8 @@ namespace Checkers
                 };
                 return new AIService(dict, sp.GetRequiredService<JumpSequenceExplorer>());
             });
+            services.AddTransient<MoveApplier>();
+            services.AddTransient<MinimaxSearcher>();
 
             // Game services
             services.AddSingleton<GameSaver>();
