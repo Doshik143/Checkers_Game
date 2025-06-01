@@ -2,10 +2,18 @@
 {
     public class Move
     {
-        public Piece Piece { get; }
-        public int ToRow { get; }
-        public int ToCol { get; }
-        public Piece CapturedPiece { get; }
+        public Piece Piece { get; set; }
+        public int ToRow { get; set; }
+        public int ToCol { get; set; }
+        public Piece CapturedPiece { get; set; }
+
+        // Властивості-координати
+        public int PieceRow => Piece?.Row ?? -1;
+        public int PieceCol => Piece?.Col ?? -1;
+        public int CapturedPieceRow => CapturedPiece?.Row ?? -1;
+        public int CapturedPieceCol => CapturedPiece?.Col ?? -1;
+
+        public Move() { }
 
         public Move(Piece piece, int toRow, int toCol, Piece capturedPiece = null)
         {
