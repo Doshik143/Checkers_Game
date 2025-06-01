@@ -136,32 +136,13 @@ namespace Checkers.Models
 
         private bool PlayerHasValidMoves(PlayerType player)
         {
-            for (int row = 0; row < Board.Size; row++)
-            {
-                for (int col = 0; col < Board.Size; col++)
-                {
-                    var piece = Board.GetPiece(row, col);
-                    if (piece?.Player == player && Board.GetValidMoves(piece).Count > 0)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return GetPlayerPieces(player)
+                .Any(piece => Board.GetValidMoves(piece).Count > 0);
         }
 
         private int CountPieces(PlayerType player)
         {
-            int count = 0;
-            for (int row = 0; row < Board.Size; row++)
-            {
-                for (int col = 0; col < Board.Size; col++)
-                {
-                    var piece = Board.GetPiece(row, col);
-                    if (piece?.Player == player) count++;
-                }
-            }
-            return count;
+            return GetPlayerPieces(player).Count();
         }
 
         private bool CanCaptureAgain(Move move)
@@ -189,6 +170,21 @@ namespace Checkers.Models
                 SelectedPiece = move.Piece;
                 ValidMoves = Board.GetValidMoves(SelectedPiece)
                     .FindAll(m => m.CapturedPiece != null);
+            }
+        }
+        
+        private IEnumerable<Piece> GetPlayerPieces(PlayerType player)
+        {
+            for (int row = 0; row < Board.Size; row++)
+            {
+                for (int col = 0; col < Board.Size; col++)
+                {
+                    var piece = Board.GetPiece(row, col);
+                    if (piece?.Player == player)
+                    {
+                        yield return piece;
+                    }
+                }
             }
         }
     }
