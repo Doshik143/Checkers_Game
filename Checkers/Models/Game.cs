@@ -39,25 +39,30 @@ namespace Checkers.Models
         {
             if (IsGameOver) return;
 
-            var piece = Board.GetPiece(row, col);
+            if (!TrySelectPiece(row, col))
+                TryMoveSelectedPiece(row, col);
+        }
 
+        private bool TrySelectPiece(int row, int col)
+        {
+            var piece = Board.GetPiece(row, col);
             if (piece != null && piece.Player == CurrentPlayer)
             {
                 SelectedPiece = piece;
                 ValidMoves = Board.GetValidMoves(piece);
-                return;
+                return true;
             }
+            return false;
+        }
 
-            if (SelectedPiece != null)
+        private void TryMoveSelectedPiece(int row, int col)
+        {
+            if (SelectedPiece == null) return;
+
+            var move = ValidMoves.FirstOrDefault(m => m.ToRow == row && m.ToCol == col);
+            if (move != null)
             {
-                foreach (var move in ValidMoves)
-                {
-                    if (move.ToRow == row && move.ToCol == col)
-                    {
-                        MakeMove(move);
-                        break;
-                    }
-                }
+                MakeMove(move);
             }
         }
 
