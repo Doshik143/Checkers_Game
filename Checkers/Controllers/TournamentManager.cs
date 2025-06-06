@@ -1,4 +1,5 @@
 ﻿using Checkers.Models;
+using Checkers.Strategies;
 using Checkers.Views;
 using System;
 using System.Windows.Forms;
@@ -16,6 +17,7 @@ namespace Checkers.Controllers
         private int _blackWins;
         private TournamentStatusForm _statusForm;
 
+
         public TournamentManager(GameController controller, MainForm view)
         {
             _controller = controller ?? throw new ArgumentNullException(nameof(controller));
@@ -31,9 +33,11 @@ namespace Checkers.Controllers
             _blackWins = 0;
 
             _controller.IsTournamentMode = true;
+            _controller.SetSessionStrategy(new TournamentGameStrategy());
 
             _statusForm = new TournamentStatusForm();
             _statusForm.Show();
+
 
             PlayNextGame();
         }

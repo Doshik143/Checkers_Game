@@ -1,5 +1,7 @@
-﻿using Checkers.Models;
+﻿using Checkers.Commands;
+using Checkers.Models;
 using Checkers.Services;
+using Checkers.Strategies;
 using Checkers.Views;
 using System;
 using System.Diagnostics;
@@ -18,6 +20,8 @@ namespace Checkers.Controllers
         private bool _playAgainstAI;
         private PlayerType _humanPlayerColor;
         private string _currentStyle;
+        private readonly GameCommandInvoker _commandInvoker;
+        private IGameSessionStrategy _sessionStrategy;
 
         public bool IsTournamentMode { get; set; } = false;
 
@@ -120,56 +124,24 @@ namespace Checkers.Controllers
 
         private void FinalizeGameOver()
         {
-            _gameTimer.Stop();
-            _stats.RecordGame(_game.Winner, _gameTimer.Elapsed);
-            _stats.SaveToFile("stats.dat");
-
-            
-             GameOver?.Invoke(_game.Winner, _currentStyle);
-
+            _sessionStrategy.OnGameOver(_game.Winner, _currentStyle);
+            GameOver?.Invoke(_game.Winner, _currentStyle);
             StateChanged?.Invoke();
         }
 
         public void SaveGame()
         {
-            using (var saveDialog = new SaveFileDialog
-            {
-                Filter = "JSON файли (*.json)|*.json",
-                Title = "Зберегти гру",
-                DefaultExt = "json",
-                AddExtension = true
-            })
-            {
-                if (saveDialog.ShowDialog() == DialogResult.OK &&
-                    _saver.Save(_game, saveDialog.FileName))
-                {
-                    MessageBox.Show("Гра успішно збережена!", "Успіх",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
+            var command = new SaveGameCommand(_game, _saver);
+            _commandInvoker.ExecuteCommand(command);
         }
 
         public void LoadGame()
         {
-            using (var openDialog = new OpenFileDialog
-            {
-                Filter = "JSON файли (*.json)|*.json",
-                Title = "Завантажити гру",
-                CheckFileExists = true
-            })
-            {
-                if (openDialog.ShowDialog() == DialogResult.OK)
-                {
-                    var loaded = _saver.Load(openDialog.FileName);
-                    if (loaded != null)
-                    {
-                        _game = loaded;
-                        StateChanged?.Invoke();
-                        MessageBox.Show("Гра успішно завантажена!", "Успіх",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                }
-            }
+            var command = new LoadGameCommand(_saver, (loadedGame) => {
+                _game = loadedGame;
+                StateChanged?.Invoke();
+            });
+            _commandInvoker.ExecuteCommand(command);
         }
 
         public void UndoLastMove()
@@ -187,6 +159,11 @@ namespace Checkers.Controllers
             }
 
             StateChanged?.Invoke();
+        }
+
+        public void SetSessionStrategy(IGameSessionStrategy strategy)
+        {
+            _sessionStrategy = strategy;
         }
 
         public Game GetGame() => _game;
