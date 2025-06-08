@@ -64,6 +64,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\GameCommandInvoker.cs" />
+    <Compile Include="Commands\IGameCommand.cs" />
+    <Compile Include="Commands\LoadGameCommand.cs" />
+    <Compile Include="Commands\SaveGameCommand.cs" />
     <Compile Include="Controllers\GameController.cs" />
     <Compile Include="Controllers\TournamentManager.cs" />
     <Compile Include="Models\Board.cs" />
@@ -90,6 +94,9 @@
     <Compile Include="Services\MoveApplier.cs" />
     <Compile Include="Services\ProStrategy.cs" />
     <Compile Include="Services\RandomProvider.cs" />
+    <Compile Include="Strategies\IGameSessionStrategy.cs" />
+    <Compile Include="Strategies\RegularGameStrategy.cs" />
+    <Compile Include="Strategies\TournamentGameStrategy.cs" />
     <Compile Include="Views\GameOverForm.cs">
       <SubType>Form</SubType>
     </Compile>

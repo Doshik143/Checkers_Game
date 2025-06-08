@@ -29,22 +29,27 @@ namespace Checkers.Services
                     var piece = board.GetPiece(r, c);
                     if (piece == null) continue;
 
-                    int value = GetPieceValue(piece);
-                    bool isCentral = IsCentralPosition(r, c);
-                    bool isEdge = IsEdgePosition(r, c);
-                    bool isVulnerable = IsVulnerable(board, piece);
-
-                    int total = value
-                                + (isCentral ? CentralBonus : 0)
-                                + (isEdge ? EdgePenalty : 0)
-                                + (isVulnerable ? VulnerablePenalty : 0);
-
-                    score += piece.Player == maximizingPlayer ? total : -total;
+                    score += EvaluatePiece(board, piece, maximizingPlayer);
                 }
             }
 
             return score;
         }
+
+        private int EvaluatePiece(Board board, Piece piece, PlayerType maximizingPlayer)
+        {
+			int value = GetPieceValue(piece);
+			bool isCentral = IsCentralPosition(piece.Row, piece.Col);
+			bool isEdge = IsEdgePosition(piece.Row, piece.Col);
+			bool isVulnerable = IsVulnerable(board, piece);
+
+			int total = value
+						+ (isCentral ? CentralBonus : 0)
+						+ (isEdge ? EdgePenalty : 0)
+						+ (isVulnerable ? VulnerablePenalty : 0);
+
+			return piece.Player == maximizingPlayer ? total : -total;
+		}
 
         private int GetPieceValue(Piece piece)
         {
@@ -62,22 +67,24 @@ namespace Checkers.Services
             return row == 0 || row == BoardSize - 1 || col == 0 || col == BoardSize - 1;
         }
 
-        private bool IsVulnerable(Board board, Piece piece)
-        {
-            PlayerType opponent = piece.Player == PlayerType.White ? PlayerType.Black : PlayerType.White;
-            var opponentMoves = new List<Move>();
+		private bool IsVulnerable(Board board, Piece piece)
+		{
+			PlayerType opponent = piece.Player == PlayerType.White ? PlayerType.Black : PlayerType.White;
 
-            for (int r = 0; r < BoardSize; r++)
-            {
-                for (int c = 0; c < BoardSize; c++)
-                {
-                    var p = board.GetPiece(r, c);
-                    if (p?.Player == opponent)
-                        opponentMoves.AddRange(board.GetValidMoves(p));
-                }
-            }
+			for (int r = 0; r < BoardSize; r++)
+			{
+				for (int c = 0; c < BoardSize; c++)
+				{
+					var p = board.GetPiece(r, c);
+					if (p?.Player != opponent) continue;
 
-            return opponentMoves.Any(m => m.CapturedPiece?.Row == piece.Row && m.CapturedPiece?.Col == piece.Col);
-        }
-    }
+					var opponentMoves = board.GetValidMoves(p);
+					if (opponentMoves.Any(m => m.CapturedPiece?.Row == piece.Row && m.CapturedPiece?.Col == piece.Col))
+						return true;
+				}
+			}
+
+			return false;
+		}
+	}
 }
